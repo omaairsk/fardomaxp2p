@@ -1,691 +1,1545 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fardomax Secure Transmit - Serverless P2P</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fardomax Secure Transmit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+:root {
+  --bg: #020408;
+  --bg2: #050d15;
+  --panel: rgba(0,200,255,0.04);
+  --border: rgba(0,200,255,0.18);
+  --cyan: #00c8ff;
+  --cyan2: #00ffcc;
+  --red: #ff2d55;
+  --gold: #ffd700;
+  --text: #c8eeff;
+  --dim: rgba(200,238,255,0.45);
+  --glow: 0 0 20px rgba(0,200,255,0.5);
+  --glow2: 0 0 40px rgba(0,200,255,0.3);
+}
 
-  <style>
-    body {
-      margin: 0;
-      background-color: #020617; /* slate-950 */
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-    
-    @keyframes spin-reverse {
-      0% { transform: rotate(360deg); }
-      100% { transform: rotate(0deg); }
-    }
-    .animate-spin-reverse { animation: spin-reverse 1.5s linear infinite; }
-    .animate-spin-slow { animation: spin 2s linear infinite; }
-    
-    .cyber-bg {
-      background-image: 
-        linear-gradient(to right, #0891b20a 1px, transparent 1px),
-        linear-gradient(to bottom, #0891b20a 1px, transparent 1px);
-      background-size: 50px 50px;
-    }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    .d-none { display: none !important; }
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Exo 2', sans-serif;
+  overflow-x: hidden;
+}
 
-    /* Custom Input Scrollbar for large keys */
-    input.key-input {
-      font-family: monospace;
-      letter-spacing: 0.1em;
-    }
-  </style>
+/* ── CANVAS BG ── */
+#bg-canvas {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+}
+
+/* ── LOADING SCREEN ── */
+#loader {
+  position: fixed; inset: 0; z-index: 1000;
+  background: #020408;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: opacity 0.8s ease, visibility 0.8s;
+}
+#loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.loader-hex {
+  position: relative; width: 120px; height: 120px; margin-bottom: 40px;
+}
+.loader-hex svg {
+  width: 100%; height: 100%;
+  animation: hex-spin 3s linear infinite;
+}
+@keyframes hex-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+.loader-hex svg .ring1 { animation: ring-pulse 1.5s ease-in-out infinite; }
+.loader-hex svg .ring2 { animation: ring-pulse 1.5s ease-in-out infinite 0.3s; }
+.loader-hex svg .ring3 { animation: ring-pulse 1.5s ease-in-out infinite 0.6s; }
+@keyframes ring-pulse {
+  0%, 100% { opacity: 1; stroke-width: 1.5; }
+  50% { opacity: 0.3; stroke-width: 0.5; }
+}
+
+.loader-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 28px; font-weight: 900;
+  letter-spacing: 4px;
+  color: var(--cyan);
+  text-shadow: var(--glow);
+  margin-bottom: 8px;
+  animation: title-flicker 4s infinite;
+}
+@keyframes title-flicker {
+  0%,94%,96%,100% { opacity: 1; }
+  95% { opacity: 0.6; }
+}
+.loader-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; letter-spacing: 6px;
+  color: var(--cyan2);
+  text-transform: uppercase; margin-bottom: 48px;
+}
+
+.loader-bar-wrap {
+  width: 320px; height: 2px;
+  background: rgba(0,200,255,0.1);
+  border-radius: 2px; overflow: hidden;
+  position: relative; margin-bottom: 16px;
+}
+.loader-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan2), var(--cyan), var(--cyan2));
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 12px var(--cyan);
+}
+
+.loader-status {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; color: var(--dim);
+  letter-spacing: 2px; min-height: 16px;
+}
+
+.loader-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,200,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+.loader-scanline {
+  position: absolute; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(transparent, rgba(0,200,255,0.15), transparent);
+  animation: scan 3s linear infinite;
+  pointer-events: none;
+}
+@keyframes scan {
+  0% { top: -3px; }
+  100% { top: 100%; }
+}
+
+/* ── MAIN APP ── */
+#app {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  opacity: 0; transition: opacity 1s ease;
+}
+#app.visible { opacity: 1; }
+
+/* ── HEADER ── */
+header {
+  padding: 24px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(0,200,255,0.06) 0%, transparent 100%);
+  position: relative;
+}
+header::after {
+  content: '';
+  position: absolute; bottom: -1px; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  box-shadow: var(--glow);
+}
+
+.logo {
+  display: flex; align-items: center; gap: 14px;
+}
+.logo-icon {
+  width: 44px; height: 44px;
+  position: relative;
+}
+.logo-icon svg { width: 100%; height: 100%; }
+
+.logo-text {
+  display: flex; flex-direction: column;
+}
+.logo-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 20px; font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--cyan);
+  text-shadow: var(--glow);
+  line-height: 1;
+}
+.logo-tagline {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px; letter-spacing: 4px;
+  color: var(--cyan2); text-transform: uppercase;
+  margin-top: 3px;
+}
+
+.header-stats {
+  display: flex; gap: 32px; align-items: center;
+}
+.stat-item {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 2px;
+}
+.stat-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px; color: var(--dim);
+  letter-spacing: 2px; text-transform: uppercase;
+}
+.stat-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 13px; font-weight: 600;
+  color: var(--cyan2);
+}
+
+.security-badge {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid rgba(0,255,200,0.3);
+  border-radius: 2px;
+  background: rgba(0,255,200,0.05);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; letter-spacing: 2px;
+  color: var(--cyan2);
+}
+.security-badge .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cyan2);
+  box-shadow: 0 0 8px var(--cyan2);
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+}
+
+/* ── MAIN CONTENT ── */
+main {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding: 60px 40px;
+  gap: 48px;
+}
+
+.hero-text {
+  text-align: center; max-width: 700px;
+}
+.hero-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 900;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+.hero-title .line1 { color: var(--text); display: block; }
+.hero-title .line2 {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--cyan);
+  display: block;
+  text-shadow: none;
+  letter-spacing: 2px;
+}
+.hero-desc {
+  font-size: 14px; color: var(--dim);
+  letter-spacing: 1px; line-height: 1.8;
+  font-weight: 300;
+}
+
+.features-strip {
+  display: flex; gap: 24px; flex-wrap: wrap; justify-content: center;
+}
+.feature-tag {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--panel);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; letter-spacing: 2px;
+  color: var(--dim); text-transform: uppercase;
+}
+.feature-tag .icon { font-size: 14px; }
+
+/* ── TRANSFER PANELS ── */
+.transfer-container {
+  display: grid; grid-template-columns: 1fr 80px 1fr;
+  gap: 0; align-items: start;
+  width: 100%; max-width: 960px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+.panel::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  box-shadow: var(--glow);
+}
+.panel-corner {
+  position: absolute;
+  width: 12px; height: 12px;
+  border-color: var(--cyan);
+  border-style: solid;
+  opacity: 0.7;
+}
+.panel-corner.tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+.panel-corner.tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+.panel-corner.bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+.panel-corner.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+.panel-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px; letter-spacing: 4px;
+  color: var(--dim); text-transform: uppercase;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.panel-label::after {
+  content: ''; flex: 1; height: 1px;
+  background: var(--border);
+}
+.panel-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px; font-weight: 700;
+  color: var(--text); margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+
+/* ── DROP ZONE ── */
+.drop-zone {
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative; overflow: hidden;
+  background: rgba(0,200,255,0.02);
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--cyan);
+  background: rgba(0,200,255,0.07);
+  box-shadow: inset 0 0 30px rgba(0,200,255,0.08);
+}
+.drop-zone .dz-icon {
+  font-size: 48px; margin-bottom: 16px;
+  display: block; opacity: 0.7;
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.drop-zone .dz-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px; color: var(--text);
+  margin-bottom: 8px; letter-spacing: 1px;
+}
+.drop-zone .dz-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; color: var(--dim); letter-spacing: 1px;
+}
+.drop-zone .dz-unlimited {
+  margin-top: 12px;
+  display: inline-block;
+  padding: 4px 12px;
+  border: 1px solid rgba(0,255,200,0.3);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--cyan2);
+  letter-spacing: 2px;
+}
+#file-input { display: none; }
+
+/* ── FILE LIST ── */
+.file-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.file-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: rgba(0,200,255,0.06);
+  border: 1px solid rgba(0,200,255,0.12);
+  border-radius: 3px;
+  animation: slide-in 0.3s ease;
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.file-item .fi-icon { font-size: 20px; flex-shrink: 0; }
+.file-item .fi-info { flex: 1; min-width: 0; }
+.file-item .fi-name {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.file-item .fi-size {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--dim); margin-top: 2px;
+}
+.file-item .fi-remove {
+  background: none; border: none;
+  color: var(--red); cursor: pointer;
+  font-size: 16px; padding: 2px 6px;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+.file-item .fi-remove:hover { opacity: 0.7; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 10px; padding: 14px 28px;
+  font-family: 'Orbitron', monospace;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  border: none; border-radius: 2px;
+  cursor: pointer; transition: all 0.3s ease;
+  position: relative; overflow: hidden;
+  width: 100%; margin-top: 20px;
+}
+.btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+.btn:hover::before { transform: translateX(100%); }
+
+.btn-primary {
+  background: linear-gradient(135deg, #003850, #005878);
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+  box-shadow: 0 0 20px rgba(0,200,255,0.2), inset 0 1px 0 rgba(0,200,255,0.1);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #004d6e, #006e96);
+  box-shadow: 0 0 30px rgba(0,200,255,0.4), inset 0 1px 0 rgba(0,200,255,0.2);
+  transform: translateY(-1px);
+}
+.btn-primary:disabled {
+  opacity: 0.4; cursor: not-allowed; transform: none;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #003828, #005040);
+  color: var(--cyan2);
+  border: 1px solid var(--cyan2);
+  box-shadow: 0 0 20px rgba(0,255,200,0.2);
+}
+.btn-success:hover {
+  box-shadow: 0 0 30px rgba(0,255,200,0.4);
+  transform: translateY(-1px);
+}
+
+/* ── DIVIDER ── */
+.panel-divider {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 48px 0;
+  gap: 12px;
+}
+.divider-line {
+  width: 1px; flex: 1;
+  background: linear-gradient(180deg, transparent, var(--border), transparent);
+}
+.divider-icon {
+  width: 48px; height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron', monospace;
+  font-size: 14px; color: var(--dim);
+  background: var(--bg2);
+}
+
+/* ── URL BOX ── */
+.url-box {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(0,200,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  display: none;
+}
+.url-box.visible { display: block; animation: fade-in 0.5s ease; }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.url-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px; color: var(--cyan2);
+  letter-spacing: 3px; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.url-input-wrap {
+  display: flex; gap: 8px;
+}
+.url-input {
+  flex: 1; background: rgba(0,200,255,0.05);
+  border: 1px solid rgba(0,200,255,0.2);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; padding: 10px 12px;
+  border-radius: 2px; outline: none;
+  letter-spacing: 1px;
+}
+.url-copy {
+  padding: 8px 16px;
+  background: rgba(0,200,255,0.1);
+  border: 1px solid rgba(0,200,255,0.3);
+  color: var(--cyan); cursor: pointer;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; letter-spacing: 2px;
+  border-radius: 2px; white-space: nowrap;
+  transition: all 0.2s;
+}
+.url-copy:hover {
+  background: rgba(0,200,255,0.2);
+  box-shadow: var(--glow);
+}
+.url-copy.copied { color: var(--cyan2); border-color: var(--cyan2); }
+
+/* ── PROGRESS ── */
+.progress-section { margin-top: 20px; display: none; }
+.progress-section.visible { display: block; }
+.progress-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.progress-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--dim); letter-spacing: 2px;
+}
+.progress-pct {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px; font-weight: 600;
+  color: var(--cyan);
+}
+.progress-bar-wrap {
+  height: 4px; background: rgba(0,200,255,0.1);
+  border-radius: 4px; overflow: hidden; position: relative;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan2), var(--cyan));
+  border-radius: 4px; width: 0%;
+  transition: width 0.2s ease;
+  box-shadow: 0 0 8px var(--cyan);
+  position: relative;
+}
+.progress-bar-fill::after {
+  content: '';
+  position: absolute; right: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan);
+}
+.progress-stats {
+  display: flex; gap: 24px; margin-top: 10px;
+}
+.p-stat {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--dim);
+  letter-spacing: 1px;
+}
+.p-stat span {
+  color: var(--text); font-weight: 600;
+}
+
+/* ── STATUS MESSAGES ── */
+.status-msg {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(0,200,255,0.05);
+  border-left: 2px solid var(--cyan);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; color: var(--dim);
+  letter-spacing: 1px; line-height: 1.6;
+  display: none;
+}
+.status-msg.visible { display: block; }
+.status-msg.success { border-color: var(--cyan2); color: var(--cyan2); }
+.status-msg.error { border-color: var(--red); color: var(--red); }
+.status-msg.info { border-color: var(--gold); color: var(--gold); }
+
+/* ── RECEIVE SECTION ── */
+.receive-input-wrap {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.receive-input {
+  width: 100%;
+  background: rgba(0,200,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px; padding: 14px 16px;
+  border-radius: 2px; outline: none;
+  letter-spacing: 1px;
+  transition: border-color 0.3s;
+}
+.receive-input:focus { border-color: var(--cyan); }
+.receive-input::placeholder { color: var(--dim); opacity: 0.6; }
+
+/* ── DOWNLOAD AREA ── */
+.download-area {
+  margin-top: 20px; display: none;
+}
+.download-area.visible { display: block; }
+.dl-file-card {
+  padding: 16px;
+  background: rgba(0,255,200,0.04);
+  border: 1px solid rgba(0,255,200,0.2);
+  border-radius: 3px;
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 12px;
+}
+.dl-file-icon { font-size: 32px; }
+.dl-file-info { flex: 1; }
+.dl-file-name {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px; color: var(--text);
+  margin-bottom: 4px;
+}
+.dl-file-size {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; color: var(--dim);
+}
+
+/* ── ENCRYPTION INDICATOR ── */
+.enc-indicator {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 16px; padding: 10px 14px;
+  background: rgba(0,200,255,0.04);
+  border: 1px solid rgba(0,200,255,0.15);
+  border-radius: 2px;
+}
+.enc-icon { font-size: 16px; }
+.enc-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--dim);
+  letter-spacing: 1px;
+}
+.enc-text strong { color: var(--cyan2); }
+
+/* ── FOOTER ── */
+footer {
+  padding: 24px 40px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-info {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--dim);
+  letter-spacing: 2px; text-transform: uppercase;
+}
+.footer-links {
+  display: flex; gap: 24px;
+}
+.footer-links a {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--dim);
+  letter-spacing: 2px; text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--cyan); }
+
+/* ── NOTIFICATION TOAST ── */
+.toast {
+  position: fixed; bottom: 32px; right: 32px;
+  padding: 14px 20px; z-index: 9999;
+  background: var(--bg2);
+  border: 1px solid var(--cyan);
+  border-radius: 3px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; color: var(--cyan);
+  letter-spacing: 1px;
+  box-shadow: var(--glow2);
+  animation: toast-in 0.4s ease;
+  display: flex; align-items: center; gap: 10px;
+  max-width: 320px;
+}
+.toast.success { border-color: var(--cyan2); color: var(--cyan2); }
+.toast.error { border-color: var(--red); color: var(--red); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ── PEER STATUS ── */
+.peer-status-bar {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; margin-top: 16px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; letter-spacing: 2px; color: var(--dim);
+}
+.peer-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #555; transition: background 0.3s, box-shadow 0.3s;
+}
+.peer-dot.online { background: var(--cyan2); box-shadow: 0 0 8px var(--cyan2); }
+.peer-dot.connecting { background: var(--gold); box-shadow: 0 0 8px var(--gold); animation: blink 1s infinite; }
+.peer-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+/* ── SCANLINE OVERLAY ── */
+.scanlines {
+  position: fixed; inset: 0; z-index: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .transfer-container {
+    grid-template-columns: 1fr;
+  }
+  .panel-divider {
+    flex-direction: row; padding: 0 24px;
+  }
+  .divider-line { flex: 1; width: auto; height: 1px; }
+  header { padding: 16px 20px; }
+  .header-stats { display: none; }
+  main { padding: 32px 20px; }
+}
+</style>
 </head>
-<body class="min-h-screen text-cyan-50 relative overflow-x-hidden selection:bg-cyan-500/30">
+<body>
 
-  <!-- Dynamic Cyber Background -->
-  <div class="fixed inset-0 cyber-bg pointer-events-none z-0"></div>
-  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-64 bg-cyan-500/10 blur-[120px] pointer-events-none rounded-full z-0"></div>
-  
-  <!-- Toast Notification -->
-  <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 border-l-4 border-cyan-400 text-cyan-400 px-6 py-4 shadow-[0_0_20px_rgba(34,211,238,0.3)] font-mono text-sm z-50 animate-pulse flex items-center d-none transition-opacity duration-300">
-    <i data-lucide="terminal" class="w-4 h-4 mr-3"></i>
-    <span id="toast-msg"></span>
+<canvas id="bg-canvas"></canvas>
+<div class="scanlines"></div>
+
+<!-- ───── LOADER ───── -->
+<div id="loader">
+  <div class="loader-grid"></div>
+  <div class="loader-scanline"></div>
+  <div class="loader-hex">
+    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon class="ring1" points="60,8 108,35 108,85 60,112 12,85 12,35" stroke="#00c8ff" stroke-width="1.5" fill="none"/>
+      <polygon class="ring2" points="60,20 96,41 96,79 60,100 24,79 24,41" stroke="#00ffcc" stroke-width="1" fill="none" opacity="0.7"/>
+      <polygon class="ring3" points="60,32 84,47 84,73 60,88 36,73 36,47" stroke="#00c8ff" stroke-width="0.8" fill="none" opacity="0.5"/>
+      <circle cx="60" cy="60" r="6" fill="#00c8ff" opacity="0.9"/>
+      <circle cx="60" cy="60" r="14" stroke="#00c8ff" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <line x1="60" y1="8" x2="60" y2="20" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
+      <line x1="108" y1="35" x2="96" y2="41" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
+      <line x1="108" y1="85" x2="96" y2="79" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
+      <line x1="60" y1="112" x2="60" y2="100" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
+      <line x1="12" y1="85" x2="24" y2="79" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
+      <line x1="12" y1="35" x2="24" y2="41" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
+    </svg>
   </div>
+  <div class="loader-title">FARDOMAX</div>
+  <div class="loader-sub">Secure Transmit • Initializing</div>
+  <div class="loader-bar-wrap">
+    <div class="loader-bar" id="loader-bar"></div>
+  </div>
+  <div class="loader-status" id="loader-status">Establishing secure channel...</div>
+</div>
 
-  <div class="relative z-10 max-w-4xl mx-auto px-4 py-12 flex flex-col min-h-screen">
-    
-    <!-- Header Section -->
-    <header class="flex flex-col items-center mb-12 text-center select-none">
-      <div id="logo-btn" class="inline-flex items-center justify-center p-4 mb-6 rounded-2xl bg-slate-900 border border-cyan-500/30 shadow-[0_0_30px_rgba(34,211,238,0.15)] relative group cursor-pointer transition-transform hover:scale-105">
-        <div class="absolute inset-0 bg-cyan-400/20 rounded-2xl blur-md group-hover:bg-cyan-400/30 transition-all"></div>
-        <i data-lucide="shield" class="w-10 h-10 text-cyan-400 relative z-10 drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]"></i>
+<!-- ───── APP ───── -->
+<div id="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="22,2 40,12 40,32 22,42 4,32 4,12" stroke="#00c8ff" stroke-width="1.5" fill="rgba(0,200,255,0.06)"/>
+          <polygon points="22,8 34,15 34,29 22,36 10,29 10,15" stroke="#00ffcc" stroke-width="0.8" fill="none" opacity="0.5"/>
+          <circle cx="22" cy="22" r="5" fill="#00c8ff" opacity="0.9"/>
+          <line x1="22" y1="2" x2="22" y2="12" stroke="#00c8ff" stroke-width="1"/>
+          <line x1="40" y1="12" x2="34" y2="15" stroke="#00c8ff" stroke-width="1"/>
+          <line x1="40" y1="32" x2="34" y2="29" stroke="#00c8ff" stroke-width="1"/>
+          <line x1="22" y1="42" x2="22" y2="32" stroke="#00c8ff" stroke-width="1"/>
+          <line x1="4" y1="32" x2="10" y2="29" stroke="#00c8ff" stroke-width="1"/>
+          <line x1="4" y1="12" x2="10" y2="15" stroke="#00c8ff" stroke-width="1"/>
+        </svg>
       </div>
-      <h1 class="text-4xl md:text-6xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-400 to-cyan-400 font-mono pb-2">
-        FARDOMAX
+      <div class="logo-text">
+        <div class="logo-name">FARDOMAX</div>
+        <div class="logo-tagline">Secure Transmit</div>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-item">
+        <div class="stat-label">Protocol</div>
+        <div class="stat-val">WebRTC P2P</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Encryption</div>
+        <div class="stat-val">AES-256</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">File Limit</div>
+        <div class="stat-val">∞ NONE</div>
+      </div>
+    </div>
+    <div class="security-badge">
+      <span class="dot"></span>
+      END-TO-END ENCRYPTED
+    </div>
+  </header>
+
+  <main>
+    <div class="hero-text">
+      <h1 class="hero-title">
+        <span class="line1">Transfer Anything.</span>
+        <span class="line2">No Limits. No Servers.</span>
       </h1>
-      <p class="mt-2 text-cyan-500 font-mono tracking-[0.4em] text-sm font-bold opacity-80 flex items-center">
-        <i data-lucide="lock" class="w-3 h-3 mr-2"></i> PURE SERVERLESS P2P <i data-lucide="lock" class="w-3 h-3 ml-2"></i>
+      <p class="hero-desc">
+        Direct peer-to-peer file transfer with military-grade encryption. No file size limit, no upload to servers — your data travels directly to the recipient. Anywhere in the world.
       </p>
-    </header>
+    </div>
 
-    <!-- Main Interface -->
-    <main id="main-container" class="flex-grow flex flex-col items-center justify-center w-full">
-      
-      <!-- ============================================== -->
-      <!-- STATE 1: IDLE (FILE SELECTOR) -->
-      <!-- ============================================== -->
-      <div id="view-idle" class="w-full max-w-2xl transform transition-all duration-500 hover:scale-[1.01] flex flex-col items-center">
-        
-        <!-- Upload Box (Sender) -->
-        <div id="upload-box" class="w-full border-2 border-dashed border-cyan-500/40 hover:border-cyan-300 bg-slate-900/50 backdrop-blur-sm transition-all duration-300 rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer group shadow-[0_0_20px_rgba(34,211,238,0.05)]">
-          <input id="fileUpload" type="file" class="hidden" />
-          <div class="bg-cyan-950 p-6 rounded-full mb-6 group-hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all duration-300">
-            <i data-lucide="upload" class="w-12 h-12 text-cyan-400 group-hover:scale-110 transition-transform"></i>
+    <div class="features-strip">
+      <div class="feature-tag"><span class="icon">🔒</span> AES-256 Encrypted</div>
+      <div class="feature-tag"><span class="icon">∞</span> Unlimited File Size</div>
+      <div class="feature-tag"><span class="icon">⚡</span> Max Speed P2P</div>
+      <div class="feature-tag"><span class="icon">🌍</span> Worldwide</div>
+      <div class="feature-tag"><span class="icon">🚫</span> Zero Storage</div>
+      <div class="feature-tag"><span class="icon">🔗</span> Unique Share URL</div>
+    </div>
+
+    <div class="transfer-container">
+
+      <!-- ─── SEND PANEL ─── -->
+      <div class="panel" id="send-panel">
+        <div class="panel-corner tl"></div>
+        <div class="panel-corner tr"></div>
+        <div class="panel-corner bl"></div>
+        <div class="panel-corner br"></div>
+        <div class="panel-label">Module 01</div>
+        <div class="panel-title">⬆ Send Files</div>
+
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <span class="dz-icon">📂</span>
+          <div class="dz-title">Drop Files Here</div>
+          <div class="dz-sub">or click to browse • any format</div>
+          <div class="dz-unlimited">∞ UNLIMITED SIZE</div>
+        </div>
+        <input type="file" id="file-input" multiple>
+
+        <div class="file-list" id="file-list"></div>
+
+        <div class="enc-indicator">
+          <span class="enc-icon">🔐</span>
+          <div class="enc-text">All transfers <strong>AES-256 encrypted</strong> · Zero server storage · Direct P2P</div>
+        </div>
+
+        <button class="btn btn-primary" id="send-btn" disabled>
+          ◈ GENERATE SECURE LINK
+        </button>
+
+        <div class="peer-status-bar">
+          <div class="peer-dot" id="send-dot"></div>
+          <span id="send-dot-label">NOT CONNECTED</span>
+        </div>
+
+        <div class="url-box" id="url-box">
+          <div class="url-label">🔗 Shareable Secure Link</div>
+          <div class="url-input-wrap">
+            <input class="url-input" id="url-display" readonly>
+            <button class="url-copy" id="copy-btn" onclick="copyURL()">COPY</button>
           </div>
-          <h2 class="text-2xl font-mono text-cyan-100 mb-3 font-bold tracking-wider text-center group-hover:text-cyan-400 transition-colors">
-            HOST A FILE
-          </h2>
-          <p class="text-cyan-600/80 font-mono text-sm text-center mb-8 leading-relaxed">
-            CLICK TO SELECT PAYLOAD TO TRANSMIT
+        </div>
+
+        <div class="status-msg" id="send-status"></div>
+
+        <div class="progress-section" id="send-progress">
+          <div class="progress-header">
+            <span class="progress-title">TRANSMITTING</span>
+            <span class="progress-pct" id="send-pct">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="send-bar"></div>
+          </div>
+          <div class="progress-stats">
+            <div class="p-stat">Sent: <span id="send-sent">0 B</span></div>
+            <div class="p-stat">Total: <span id="send-total">0 B</span></div>
+            <div class="p-stat">Speed: <span id="send-speed">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── DIVIDER ─── -->
+      <div class="panel-divider">
+        <div class="divider-line"></div>
+        <div class="divider-icon">⇄</div>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- ─── RECEIVE PANEL ─── -->
+      <div class="panel" id="recv-panel">
+        <div class="panel-corner tl"></div>
+        <div class="panel-corner tr"></div>
+        <div class="panel-corner bl"></div>
+        <div class="panel-corner br"></div>
+        <div class="panel-label">Module 02</div>
+        <div class="panel-title">⬇ Receive Files</div>
+
+        <div class="receive-input-wrap">
+          <p style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:1px;line-height:1.6;margin-bottom:4px;">
+            Paste the secure link shared by the sender, or it will auto-load if you opened this page from a share link.
           </p>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs font-mono text-emerald-400/80 w-full px-4 pointer-events-none">
-            <div class="flex flex-col items-center p-3 bg-slate-950 rounded-lg border border-slate-800"><i data-lucide="server-off" class="w-5 h-5 mb-2 text-cyan-500"></i><span>100% SERVERLESS</span></div>
-            <div class="flex flex-col items-center p-3 bg-slate-950 rounded-lg border border-slate-800"><i data-lucide="shield" class="w-5 h-5 mb-2 text-cyan-500"></i><span>E2E ENCRYPTED P2P</span></div>
-            <div class="flex flex-col items-center p-3 bg-slate-950 rounded-lg border border-slate-800"><i data-lucide="terminal" class="w-5 h-5 mb-2 text-cyan-500"></i><span>NO SIZE LIMIT</span></div>
+          <input class="receive-input" id="recv-url-input" type="text" placeholder="Paste secure share link here…">
+          <button class="btn btn-primary" id="recv-btn">
+            ◈ CONNECT &amp; RECEIVE
+          </button>
+        </div>
+
+        <div class="peer-status-bar">
+          <div class="peer-dot" id="recv-dot"></div>
+          <span id="recv-dot-label">WAITING</span>
+        </div>
+
+        <div class="status-msg" id="recv-status"></div>
+
+        <div class="progress-section" id="recv-progress">
+          <div class="progress-header">
+            <span class="progress-title">RECEIVING</span>
+            <span class="progress-pct" id="recv-pct">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="recv-bar"></div>
+          </div>
+          <div class="progress-stats">
+            <div class="p-stat">Received: <span id="recv-rcvd">0 B</span></div>
+            <div class="p-stat">Total: <span id="recv-total">0 B</span></div>
+            <div class="p-stat">Speed: <span id="recv-speed">—</span></div>
           </div>
         </div>
 
-        <!-- Receive Box (Receiver) -->
-        <div class="mt-8 w-full">
-          <div class="flex items-center w-full bg-slate-900/80 border border-emerald-500/40 rounded-xl overflow-hidden p-1 shadow-[0_0_20px_rgba(16,185,129,0.1)] focus-within:border-emerald-400 transition-colors">
-            <input id="joinInput" type="text" placeholder="PASTE INVITE KEY HERE TO RECEIVE..." class="key-input bg-transparent border-none text-emerald-100 w-full px-6 py-4 focus:outline-none placeholder-emerald-700 text-center font-bold" />
-            <button id="btn-intercept" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold font-mono px-8 py-4 transition-colors flex items-center h-full rounded-lg whitespace-nowrap">
-              <i data-lucide="download" class="w-5 h-5 mr-2"></i> INTERCEPT
-            </button>
-          </div>
-        </div>
+        <div class="download-area" id="dl-area"></div>
       </div>
 
-      <!-- ============================================== -->
-      <!-- STATE 2: GATHERING NETWORK ROUTES (LOADER) -->
-      <!-- ============================================== -->
-      <div id="view-gathering" class="w-full flex flex-col items-center animate-in fade-in duration-500 d-none">
-        <div class="flex flex-col items-center justify-center space-y-6 my-12">
-          <div class="relative w-28 h-28 flex items-center justify-center">
-            <div class="absolute inset-0 border-t-2 border-cyan-400 rounded-full animate-spin"></div>
-            <div class="absolute inset-2 border-r-2 border-emerald-400 rounded-full animate-spin-reverse"></div>
-            <div class="absolute inset-4 border-b-2 border-cyan-500 rounded-full animate-spin-slow"></div>
-            <div class="absolute inset-6 bg-cyan-500/10 rounded-full animate-pulse"></div>
-            <i data-lucide="globe" class="w-8 h-8 text-cyan-300 animate-pulse relative z-10"></i>
-          </div>
-          <div class="font-mono text-cyan-400 text-sm tracking-widest uppercase h-6">
-            GATHERING P2P NETWORK ROUTES...
-          </div>
-          <p class="text-xs text-cyan-700 font-mono">Scanning local and public interfaces for direct connection paths.</p>
-        </div>
-      </div>
+    </div><!-- end transfer-container -->
+  </main>
 
-      <!-- ============================================== -->
-      <!-- STATE 3: HOST SIGNALING EXCHANGE -->
-      <!-- ============================================== -->
-      <div id="view-host-signaling" class="w-full max-w-2xl bg-slate-900/80 border border-cyan-500/30 rounded-xl p-8 mt-4 text-center backdrop-blur-md shadow-[0_0_40px_rgba(34,211,238,0.1)] d-none">
-        <h3 class="font-mono text-cyan-400 mb-6 text-lg tracking-widest flex items-center justify-center border-b border-cyan-500/20 pb-4">
-          <i data-lucide="key" class="w-5 h-5 mr-3 text-cyan-300"></i> SECURE KEY EXCHANGE
-        </h3>
-        
-        <div class="my-6 w-full text-left">
-          <label class="text-cyan-400 text-xs font-mono mb-2 block font-bold">1. COPY THIS INVITE KEY AND SEND IT TO THE RECEIVER:</label>
-          <div class="flex items-center bg-slate-950 border border-cyan-500/50 rounded-lg p-2 overflow-hidden shadow-inner">
-            <input id="host-invite-key" type="text" readonly class="key-input bg-transparent border-none text-cyan-300 w-full text-sm focus:outline-none px-3 truncate" />
-            <button id="btn-copy-invite" class="bg-cyan-950 border border-cyan-500/30 hover:bg-cyan-900 text-cyan-400 px-4 py-3 rounded ml-2 transition-all hover:shadow-[0_0_10px_rgba(34,211,238,0.5)] flex items-center font-mono text-xs font-bold">
-              <i data-lucide="copy" class="w-4 h-4 mr-2"></i> COPY
-            </button>
-          </div>
-        </div>
+  <footer>
+    <div class="footer-info">Fardomax Secure Transmit © 2025 · WebRTC P2P · Zero Server Storage</div>
+    <div class="footer-links">
+      <a href="#">Privacy</a>
+      <a href="#">Security</a>
+      <a href="#">Docs</a>
+    </div>
+  </footer>
 
-        <div class="my-8 w-full text-left">
-          <label class="text-emerald-400 text-xs font-mono mb-2 block font-bold">2. PASTE THEIR RESPONSE KEY HERE TO CONNECT:</label>
-          <div class="flex items-center w-full bg-slate-950 border border-emerald-500/40 rounded-lg overflow-hidden p-1 shadow-[0_0_20px_rgba(16,185,129,0.1)] focus-within:border-emerald-400 transition-colors">
-            <input id="host-response-input" type="text" placeholder="PASTE RESPONSE KEY..." class="key-input bg-transparent border-none text-emerald-100 w-full px-4 py-3 focus:outline-none placeholder-emerald-800 text-sm" />
-            <button id="btn-finalize-host" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold font-mono px-6 py-3 transition-colors flex items-center rounded-md whitespace-nowrap">
-              <i data-lucide="zap" class="w-4 h-4 mr-2"></i> CONNECT
-            </button>
-          </div>
-        </div>
-        
-        <div class="mt-6 flex items-center justify-center space-x-2 text-xs font-mono text-amber-500/80 bg-amber-500/10 p-3 rounded">
-          <i data-lucide="alert-triangle" class="w-4 h-4"></i> <span>DO NOT REFRESH OR CLOSE THIS TAB</span>
-        </div>
-      </div>
+</div><!-- #app -->
 
-      <!-- ============================================== -->
-      <!-- STATE 4: RECEIVER SIGNALING EXCHANGE -->
-      <!-- ============================================== -->
-      <div id="view-receiver-signaling" class="w-full max-w-2xl bg-slate-900/80 border border-emerald-500/30 rounded-xl p-8 mt-4 text-center backdrop-blur-md shadow-[0_0_40px_rgba(16,185,129,0.1)] d-none">
-        <h3 class="font-mono text-emerald-400 mb-6 text-lg tracking-widest flex items-center justify-center border-b border-emerald-500/20 pb-4">
-          <i data-lucide="key" class="w-5 h-5 mr-3 text-emerald-300"></i> CONNECTION ACCEPTED
-        </h3>
-        
-        <div class="my-6 w-full text-left">
-          <label class="text-emerald-400 text-xs font-mono mb-2 block font-bold">1. COPY THIS RESPONSE KEY AND SEND IT BACK TO THE HOST:</label>
-          <div class="flex items-center bg-slate-950 border border-emerald-500/50 rounded-lg p-2 overflow-hidden shadow-inner">
-            <input id="receiver-response-key" type="text" readonly class="key-input bg-transparent border-none text-emerald-300 w-full text-sm focus:outline-none px-3 truncate" />
-            <button id="btn-copy-response" class="bg-emerald-950 border border-emerald-500/30 hover:bg-emerald-900 text-emerald-400 px-4 py-3 rounded ml-2 transition-all hover:shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center font-mono text-xs font-bold">
-              <i data-lucide="copy" class="w-4 h-4 mr-2"></i> COPY
-            </button>
-          </div>
-        </div>
+<script>
+/* ═══════════════════════════════════════════
+   BACKGROUND CANVAS — Particle Network
+═══════════════════════════════════════════ */
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [], lines = [];
+  const NUM = 60;
 
-        <div class="mt-10 mb-4 text-center animate-pulse flex flex-col items-center">
-          <i data-lucide="radio-receiver" class="w-10 h-10 text-cyan-500 mb-4"></i>
-          <p class="text-cyan-400 font-mono text-sm tracking-widest">WAITING FOR HOST TO CONNECT TUNNEL...</p>
-        </div>
-      </div>
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
 
-      <!-- ============================================== -->
-      <!-- STATE 5: TRANSFERRING -->
-      <!-- ============================================== -->
-      <div id="view-transferring" class="w-full max-w-xl bg-slate-900/90 border border-cyan-500/40 rounded-xl p-8 shadow-[0_0_50px_rgba(34,211,238,0.15)] relative overflow-hidden backdrop-blur-md d-none">
-        <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-800">
-          <div id="progress-bar" class="h-full bg-emerald-400 shadow-[0_0_15px_rgba(16,185,129,1)] transition-all duration-300 relative" style="width: 0%">
-            <div class="absolute right-0 top-0 bottom-0 w-10 bg-white/50 blur-sm animate-[translateX_1s_infinite]"></div>
-          </div>
-        </div>
-        
-        <div class="flex items-center justify-between mb-8">
-          <h3 class="text-2xl font-mono text-cyan-400 flex items-center">
-            <i data-lucide="activity" class="w-6 h-6 mr-3 text-cyan-500 animate-pulse"></i>
-            <span id="transfer-mode-text">UPLOADING DATA</span>
-          </h3>
-          <span id="progress-text" class="text-3xl font-mono text-emerald-400 font-bold">0%</span>
-        </div>
+  class Particle {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * W;
+      this.y = Math.random() * H;
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = (Math.random() - 0.5) * 0.4;
+      this.r = Math.random() * 1.5 + 0.5;
+      this.alpha = Math.random() * 0.4 + 0.1;
+    }
+    update() {
+      this.x += this.vx; this.y += this.vy;
+      if (this.x < 0 || this.x > W) this.vx *= -1;
+      if (this.y < 0 || this.y > H) this.vy *= -1;
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0,200,255,${this.alpha})`;
+      ctx.fill();
+    }
+  }
 
-        <div class="bg-slate-950 border border-cyan-500/20 rounded-lg p-5 space-y-4 font-mono text-sm">
-          <div class="flex justify-between items-center border-b border-cyan-500/10 pb-3">
-            <span class="text-cyan-600">TARGET PAYLOAD:</span>
-            <span id="meta-name" class="text-cyan-100 truncate w-[60%] text-right font-bold">Unknown_File</span>
-          </div>
-          <div class="flex justify-between items-center border-b border-cyan-500/10 pb-3">
-            <span class="text-cyan-600">DATA VOLUME:</span>
-            <span id="meta-size" class="text-cyan-100">0 B</span>
-          </div>
-          <div class="flex justify-between items-center border-b border-cyan-500/10 pb-3">
-            <span class="text-cyan-600">TRANSMISSION RATE:</span>
-            <span id="meta-speed" class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded">0 B/s</span>
-          </div>
-          <div class="flex justify-between items-center pt-1">
-            <span class="text-cyan-600">SECURITY PROTOCOL:</span>
-            <span class="text-emerald-500 flex items-center">
-              <i data-lucide="lock" class="w-3 h-3 mr-2"></i> PURE P2P DTLS-SRTP ACTIVE
-            </span>
-          </div>
-        </div>
-      </div>
+  for (let i = 0; i < NUM; i++) particles.push(new Particle());
 
-      <!-- ============================================== -->
-      <!-- STATE 6: COMPLETED -->
-      <!-- ============================================== -->
-      <div id="view-completed" class="w-full max-w-lg bg-slate-900 border border-emerald-500/50 rounded-xl p-10 shadow-[0_0_60px_rgba(16,185,129,0.2)] text-center flex flex-col items-center animate-in zoom-in-95 duration-500 d-none">
-        <div class="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mb-8 relative">
-          <div class="absolute inset-0 border-2 border-emerald-500 rounded-full animate-ping opacity-20"></div>
-          <i data-lucide="file-check" class="w-12 h-12 text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]"></i>
-        </div>
-        <h2 class="text-3xl font-mono text-emerald-400 mb-3 font-bold tracking-widest">TRANSMISSION COMPLETE</h2>
-        <p id="completed-filename" class="text-emerald-500/70 font-mono text-sm mb-10 max-w-[80%] truncate">Filename.ext</p>
-        
-        <a id="btn-download" href="#" class="d-none w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold font-mono py-4 px-8 rounded-lg flex items-center justify-center transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] transform hover:-translate-y-1">
-          <i data-lucide="download" class="w-6 h-6 mr-3"></i> SAVE SECURE DATA
-        </a>
-        
-        <button id="btn-restart" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold font-mono py-4 px-8 rounded-lg flex items-center justify-center transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.5)] transform hover:-translate-y-1">
-          <i data-lucide="refresh-cw" class="w-5 h-5 mr-3"></i> INITIATE NEW TRANSFER
-        </button>
-      </div>
+  // Flowing data lines
+  class DataLine {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * W;
+      this.y = -20;
+      this.speed = Math.random() * 2 + 0.5;
+      this.len = Math.random() * 60 + 20;
+      this.alpha = Math.random() * 0.3 + 0.05;
+      this.width = Math.random() * 1.5 + 0.3;
+    }
+    update() {
+      this.y += this.speed;
+      if (this.y - this.len > H) this.reset();
+    }
+    draw() {
+      const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y - this.len);
+      grad.addColorStop(0, `rgba(0,200,255,${this.alpha})`);
+      grad.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = this.width;
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(this.x, this.y - this.len);
+      ctx.stroke();
+    }
+  }
 
-      <!-- ============================================== -->
-      <!-- STATE 7: ERROR -->
-      <!-- ============================================== -->
-      <div id="view-error" class="w-full max-w-lg bg-slate-900 border border-red-500/50 rounded-xl p-10 text-center flex flex-col items-center d-none">
-        <div class="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
-          <i data-lucide="alert-triangle" class="w-10 h-10 text-red-500"></i>
-        </div>
-        <h2 class="text-2xl font-mono text-red-500 mb-4 tracking-widest font-bold">TRANSMISSION FAILURE</h2>
-        <p id="error-message-text" class="text-red-400/80 font-mono text-sm mb-8">An unknown error occurred.</p>
-        <button id="btn-reboot" class="bg-red-900/50 hover:bg-red-800 text-red-200 border border-red-500/50 font-bold font-mono py-3 px-8 rounded-lg transition-colors flex items-center">
-          <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i> REBOOT PROTOCOL
-        </button>
-      </div>
+  for (let i = 0; i < 30; i++) {
+    const l = new DataLine();
+    l.y = Math.random() * H;
+    lines.push(l);
+  }
 
-    </main>
-    
-    <!-- Footer -->
-    <footer class="mt-12 text-center text-cyan-600/40 font-mono text-xs pb-4">
-      <p>FARDOMAX QUANTUM NETWORK © 2026 // 100% SERVERLESS WEBRTC ENCRYPTED PROTOCOL</p>
-    </footer>
-  </div>
-
-  <!-- Application Logic -->
-  <script>
-    // --- INITIALIZE ICONS ---
-    lucide.createIcons();
-
-    // --- DOM ELEMENTS ---
-    const elements = {
-      uploadBox: document.getElementById('upload-box'),
-      fileUpload: document.getElementById('fileUpload'),
-      joinInput: document.getElementById('joinInput'),
-      btnIntercept: document.getElementById('btn-intercept'),
-      
-      hostInviteKey: document.getElementById('host-invite-key'),
-      btnCopyInvite: document.getElementById('btn-copy-invite'),
-      hostResponseInput: document.getElementById('host-response-input'),
-      btnFinalizeHost: document.getElementById('btn-finalize-host'),
-      
-      receiverResponseKey: document.getElementById('receiver-response-key'),
-      btnCopyResponse: document.getElementById('btn-copy-response'),
-
-      progressBar: document.getElementById('progress-bar'),
-      progressText: document.getElementById('progress-text'),
-      transferModeText: document.getElementById('transfer-mode-text'),
-      metaName: document.getElementById('meta-name'),
-      metaSize: document.getElementById('meta-size'),
-      metaSpeed: document.getElementById('meta-speed'),
-      completedFilename: document.getElementById('completed-filename'),
-      btnDownload: document.getElementById('btn-download'),
-      btnRestart: document.getElementById('btn-restart'),
-      btnReboot: document.getElementById('btn-reboot'),
-      errorMessageText: document.getElementById('error-message-text'),
-      toast: document.getElementById('toast'),
-      toastMsg: document.getElementById('toast-msg'),
-      logoBtn: document.getElementById('logo-btn')
-    };
-
-    const views = {
-      idle: document.getElementById('view-idle'),
-      gathering: document.getElementById('view-gathering'),
-      hostSignaling: document.getElementById('view-host-signaling'),
-      receiverSignaling: document.getElementById('view-receiver-signaling'),
-      transferring: document.getElementById('view-transferring'),
-      completed: document.getElementById('view-completed'),
-      error: document.getElementById('view-error')
-    };
-
-    // --- WEBRTC CONFIGURATION ---
-    // Using free public Google STUN servers to bypass basic firewalls
-    const rtcConfig = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
-      ]
-    };
-
-    // --- GLOBAL APP STATE ---
-    let currentMode = 'idle'; // 'sender', 'receiver'
-    let currentFile = null;
-    let receivedFileMeta = null;
-    let downloadBlobUrl = '';
-    let peerConnection = null;
-    let dataChannel = null;
-    let progress = 0;
-    
-    let lastTick = Date.now();
-    let bytesSinceTick = 0;
-    let toastTimer = null;
-
-    // --- UI HELPERS ---
-    const switchView = (viewName) => {
-      Object.values(views).forEach(el => el.classList.add('d-none'));
-      if (views[viewName]) views[viewName].classList.remove('d-none');
-    };
-
-    const showError = (msg) => {
-      elements.errorMessageText.innerText = msg;
-      switchView('error');
-    };
-
-    const showToast = (msg) => {
-      elements.toastMsg.innerText = msg;
-      elements.toast.classList.remove('d-none');
-      if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        elements.toast.classList.add('d-none');
-      }, 3000);
-    };
-
-    const formatBytes = (bytes, decimals = 2) => {
-      if (!+bytes) return '0 B';
-      const k = 1024;
-      const dm = decimals < 0 ? 0 : decimals;
-      const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-    };
-
-    const copyToClipboard = (inputElement) => {
-      try {
-        inputElement.select();
-        document.execCommand('copy');
-        showToast('SECURE KEY COPIED!');
-      } catch (err) {
-        showToast('ERROR: CLIPBOARD ACCESS DENIED');
-      }
-    };
-
-    const resetApp = () => {
-      window.location.reload();
-    };
-
-    // Event Listeners for UI
-    elements.logoBtn.addEventListener('click', resetApp);
-    elements.btnReboot.addEventListener('click', resetApp);
-    elements.btnRestart.addEventListener('click', resetApp);
-    
-    elements.btnCopyInvite.addEventListener('click', () => copyToClipboard(elements.hostInviteKey));
-    elements.btnCopyResponse.addEventListener('click', () => copyToClipboard(elements.receiverResponseKey));
-    
-    elements.uploadBox.addEventListener('click', () => {
-      elements.fileUpload.click();
-    });
-
-    elements.fileUpload.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        startHosting(e.target.files[0]);
-        e.target.value = null; 
-      }
-    });
-
-    elements.btnIntercept.addEventListener('click', () => {
-      const val = elements.joinInput.value.trim();
-      if (val) joinRoom(val);
-    });
-
-    elements.btnFinalizeHost.addEventListener('click', () => {
-      const val = elements.hostResponseInput.value.trim();
-      if (val) finalizeHosting(val);
-    });
-
-    // --- WEBRTC LOGIC ---
-
-    // Encode/Decode SDP objects to safe Base64 strings for manual exchange
-    const encodeKey = (obj) => btoa(JSON.stringify(obj));
-    const decodeKey = (str) => JSON.parse(atob(str));
-
-    // Wait until WebRTC has found all possible network routes (ICE candidates)
-    const gatherIce = (pc) => {
-      return new Promise((resolve) => {
-        if (pc.iceGatheringState === 'complete') {
-          resolve();
-          return;
+  function connect() {
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 140) {
+          const a = (1 - dist / 140) * 0.15;
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(0,200,255,${a})`;
+          ctx.lineWidth = 0.5;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
         }
-        const checkState = () => {
-          if (pc.iceGatheringState === 'complete') {
-            pc.removeEventListener('icegatheringstatechange', checkState);
-            resolve();
-          }
-        };
-        pc.addEventListener('icegatheringstatechange', checkState);
-        
-        // Failsafe: Continue after 3 seconds even if strictly not 'complete' to prevent infinite hanging
-        setTimeout(() => {
-          pc.removeEventListener('icegatheringstatechange', checkState);
-          resolve();
-        }, 3000);
+      }
+    }
+  }
+
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    lines.forEach(l => { l.update(); l.draw(); });
+    particles.forEach(p => { p.update(); p.draw(); });
+    connect();
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ═══════════════════════════════════════════
+   LOADING SEQUENCE
+═══════════════════════════════════════════ */
+const loaderMessages = [
+  'Establishing secure channel...',
+  'Initializing WebRTC subsystem...',
+  'Loading cryptographic modules...',
+  'Verifying end-to-end protocols...',
+  'Connecting to peer relay network...',
+  'Configuring AES-256 cipher...',
+  'System ready. Welcome to Fardomax.',
+];
+
+let barPct = 0;
+const barEl = document.getElementById('loader-bar');
+const statusEl = document.getElementById('loader-status');
+let msgIdx = 0;
+
+function tickLoader() {
+  if (barPct >= 100) {
+    setTimeout(() => {
+      document.getElementById('loader').classList.add('hidden');
+      document.getElementById('app').classList.add('visible');
+      initApp();
+    }, 400);
+    return;
+  }
+  barPct += Math.random() * 18 + 4;
+  if (barPct > 100) barPct = 100;
+  barEl.style.width = barPct + '%';
+  if (msgIdx < loaderMessages.length) {
+    statusEl.textContent = loaderMessages[msgIdx++];
+  }
+  setTimeout(tickLoader, 180 + Math.random() * 220);
+}
+setTimeout(tickLoader, 400);
+
+/* ═══════════════════════════════════════════
+   TOAST NOTIFICATION
+═══════════════════════════════════════════ */
+function showToast(msg, type = 'info', dur = 3500) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = (type === 'success' ? '✓ ' : type === 'error' ? '✗ ' : 'ℹ ') + msg;
+  document.body.appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'toast-in 0.4s ease reverse';
+    setTimeout(() => el.remove(), 400);
+  }, dur);
+}
+
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+function fmtBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+  return (b / 1073741824).toFixed(2) + ' GB';
+}
+
+function getFileIcon(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  const map = {
+    pdf: '📄', jpg: '🖼', jpeg: '🖼', png: '🖼', gif: '🖼', webp: '🖼', svg: '🖼',
+    mp4: '🎬', avi: '🎬', mov: '🎬', mkv: '🎬', webm: '🎬',
+    mp3: '🎵', wav: '🎵', flac: '🎵', ogg: '🎵',
+    zip: '📦', rar: '📦', '7z': '📦', tar: '📦', gz: '📦',
+    js: '💻', ts: '💻', py: '💻', html: '💻', css: '💻', java: '💻',
+    doc: '📝', docx: '📝', txt: '📝', md: '📝',
+    xls: '📊', xlsx: '📊', csv: '📊',
+    ppt: '📋', pptx: '📋',
+    exe: '⚙️', dmg: '⚙️', apk: '⚙️',
+  };
+  return map[ext] || '📁';
+}
+
+function setStatus(id, msg, type = '') {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status-msg visible ' + type;
+}
+
+function setPeerDot(side, state, label) {
+  const dot = document.getElementById(side + '-dot');
+  const lbl = document.getElementById(side + '-dot-label');
+  dot.className = 'peer-dot ' + state;
+  lbl.textContent = label;
+}
+
+function generateUID() {
+  return 'fmx-' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+}
+
+/* ═══════════════════════════════════════════
+   ENCRYPTION HELPERS (AES-256-GCM)
+═══════════════════════════════════════════ */
+let cryptoKey = null;
+let rawKeyBytes = null;
+
+async function generateKey() {
+  cryptoKey = await crypto.subtle.generateKey(
+    { name: 'AES-GCM', length: 256 },
+    true, ['encrypt', 'decrypt']
+  );
+  const exported = await crypto.subtle.exportKey('raw', cryptoKey);
+  rawKeyBytes = Array.from(new Uint8Array(exported))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  return rawKeyBytes;
+}
+
+async function importKey(hexKey) {
+  const bytes = new Uint8Array(hexKey.match(/.{2}/g).map(b => parseInt(b, 16)));
+  cryptoKey = await crypto.subtle.importKey(
+    'raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptChunk(data) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, data);
+  const out = new Uint8Array(12 + enc.byteLength);
+  out.set(iv, 0);
+  out.set(new Uint8Array(enc), 12);
+  return out.buffer;
+}
+
+async function decryptChunk(data) {
+  const arr = new Uint8Array(data);
+  const iv = arr.slice(0, 12);
+  const enc = arr.slice(12);
+  return await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, cryptoKey, enc);
+}
+
+/* ═══════════════════════════════════════════
+   MAIN APP LOGIC
+═══════════════════════════════════════════ */
+const CHUNK_SIZE = 64 * 1024; // 64 KB chunks
+
+let selectedFiles = [];
+let senderPeer = null;
+let recvPeer = null;
+
+function initApp() {
+  // Check if URL contains a peer/key param (receiver mode auto-fill)
+  const hash = window.location.hash.substring(1);
+  if (hash && hash.startsWith('fmx')) {
+    const full = window.location.href;
+    document.getElementById('recv-url-input').value = full;
+    showToast('Share link detected — ready to receive!', 'success');
+  }
+
+  // Drop zone
+  const dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    addFiles(e.dataTransfer.files);
+  });
+
+  document.getElementById('file-input').addEventListener('change', e => {
+    addFiles(e.target.files);
+  });
+
+  document.getElementById('send-btn').addEventListener('click', startSending);
+  document.getElementById('recv-btn').addEventListener('click', startReceiving);
+}
+
+function addFiles(files) {
+  for (const f of files) {
+    if (!selectedFiles.find(x => x.name === f.name && x.size === f.size)) {
+      selectedFiles.push(f);
+    }
+  }
+  renderFileList();
+  document.getElementById('send-btn').disabled = selectedFiles.length === 0;
+}
+
+function removeFile(idx) {
+  selectedFiles.splice(idx, 1);
+  renderFileList();
+  document.getElementById('send-btn').disabled = selectedFiles.length === 0;
+}
+
+function renderFileList() {
+  const list = document.getElementById('file-list');
+  list.innerHTML = '';
+  selectedFiles.forEach((f, i) => {
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.innerHTML = `
+      <span class="fi-icon">${getFileIcon(f.name)}</span>
+      <div class="fi-info">
+        <div class="fi-name">${f.name}</div>
+        <div class="fi-size">${fmtBytes(f.size)}</div>
+      </div>
+      <button class="fi-remove" onclick="removeFile(${i})">✕</button>
+    `;
+    list.appendChild(el);
+  });
+}
+
+/* ── SENDER FLOW ── */
+async function startSending() {
+  if (selectedFiles.length === 0) return;
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.textContent = '◌ GENERATING…';
+
+  setPeerDot('send', 'connecting', 'CONNECTING...');
+  setStatus('send-status', 'Generating encryption key & peer ID...', 'info');
+
+  // Generate AES key
+  const keyHex = await generateKey();
+  const peerId = generateUID();
+
+  try {
+    senderPeer = new Peer(peerId, {
+      host: '0.peerjs.com', port: 443, path: '/',
+      secure: true, debug: 0,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:global.stun.twilio.com:3478?transport=udp' }
+        ]
+      }
+    });
+
+    senderPeer.on('open', id => {
+      setPeerDot('send', 'online', 'READY — WAITING FOR RECEIVER');
+      const shareURL = window.location.origin + window.location.pathname + '#' + id + '|' + keyHex;
+      document.getElementById('url-display').value = shareURL;
+      document.getElementById('url-box').classList.add('visible');
+      setStatus('send-status', '⬆ Link generated! Share it with recipient. Waiting for connection…', 'info');
+      btn.textContent = '⏳ WAITING FOR RECEIVER…';
+      showToast('Secure link generated!', 'success');
+    });
+
+    senderPeer.on('connection', conn => {
+      setPeerDot('send', 'connecting', 'RECEIVER CONNECTING...');
+      setStatus('send-status', '↔ Receiver connected! Starting transfer…');
+      conn.on('open', () => {
+        setPeerDot('send', 'online', 'CONNECTED — TRANSFERRING');
+        sendAllFiles(conn);
       });
-    };
-
-    const setupDataChannel = (channel, fileToSend) => {
-      channel.binaryType = 'arraybuffer';
-
-      const handleOpen = () => {
-        switchView('transferring');
-        elements.transferModeText.innerText = currentMode === 'sender' ? 'UPLOADING DATA' : 'RECEIVING DATA';
-        if (fileToSend) {
-          sendFile(fileToSend, channel);
-        }
-      };
-
-      if (channel.readyState === 'open') handleOpen();
-      else channel.onopen = handleOpen;
-
-      channel.onclose = () => {
-        if (!downloadBlobUrl && currentMode === 'receiver' || progress < 100 && currentMode === 'sender') {
-          showError("PEER DISCONNECTED. CONNECTION TERMINATED.");
-        }
-      };
-
-      channel.onerror = (error) => {
-        showError("FATAL SECURE TUNNEL ERROR.");
-      };
-
-      let receiveBuffer = [];
-      let receivedBytes = 0;
-      let expectedMeta = null;
-
-      channel.onmessage = (event) => {
-        if (typeof event.data === 'string') {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'meta') {
-            expectedMeta = msg;
-            receivedFileMeta = msg;
-            receiveBuffer = [];
-            receivedBytes = 0;
-            elements.metaName.innerText = msg.name;
-            elements.metaSize.innerText = formatBytes(msg.size);
-          } else if (msg.type === 'eof') {
-            const blob = new Blob(receiveBuffer, { type: expectedMeta?.mime || 'application/octet-stream' });
-            downloadBlobUrl = URL.createObjectURL(blob);
-            elements.btnDownload.href = downloadBlobUrl;
-            elements.btnDownload.download = expectedMeta?.name || 'Fardomax_Download';
-            completeTransfer();
-          }
-        } else {
-          // Receiving Binary Data
-          receiveBuffer.push(event.data);
-          receivedBytes += event.data.byteLength;
-          
-          // Speed Calculation
-          bytesSinceTick += event.data.byteLength;
-          const now = Date.now();
-          if (now - lastTick > 1000) {
-            const speed = bytesSinceTick / ((now - lastTick) / 1000);
-            elements.metaSpeed.innerText = formatBytes(speed) + '/s';
-            lastTick = now;
-            bytesSinceTick = 0;
-          }
-
-          if (expectedMeta) {
-            progress = Math.floor((receivedBytes / expectedMeta.size) * 100);
-            updateProgress(progress);
-          }
-        }
-      };
-    };
-
-    const updateProgress = (pct) => {
-      elements.progressBar.style.width = `${pct}%`;
-      elements.progressText.innerText = `${pct}%`;
-    };
-
-    const completeTransfer = () => {
-      progress = 100;
-      updateProgress(100);
-      switchView('completed');
-      elements.completedFilename.innerText = currentFile?.name || receivedFileMeta?.name || 'Unknown_File';
-      
-      if (currentMode === 'receiver') {
-        elements.btnDownload.classList.remove('d-none');
-      } else {
-        elements.btnDownload.classList.add('d-none');
-      }
-    };
-
-    const sendFile = (file, channel) => {
-      elements.metaName.innerText = file.name;
-      elements.metaSize.innerText = formatBytes(file.size);
-
-      channel.send(JSON.stringify({
-        type: 'meta',
-        name: file.name,
-        size: file.size,
-        mime: file.type
-      }));
-
-      const chunkSize = 16384; // 16KB for max WebRTC cross-browser stability
-      const reader = new FileReader();
-      let offset = 0;
-
-      reader.onload = (e) => {
-        if (channel.readyState !== 'open') return;
-        channel.send(e.target.result);
-        offset += e.target.result.byteLength;
-        
-        bytesSinceTick += e.target.result.byteLength;
-        const now = Date.now();
-        if (now - lastTick > 1000) {
-          const speed = bytesSinceTick / ((now - lastTick) / 1000);
-          elements.metaSpeed.innerText = formatBytes(speed) + '/s';
-          lastTick = now;
-          bytesSinceTick = 0;
-        }
-        
-        progress = Math.floor((offset / file.size) * 100);
-        updateProgress(progress);
-
-        if (offset < file.size) {
-          readSlice();
-        } else {
-          channel.send(JSON.stringify({ type: 'eof' }));
-          completeTransfer();
-        }
-      };
-
-      const readSlice = () => {
-        if (channel.readyState !== 'open') return;
-        
-        if (channel.bufferedAmount > 1024 * 1024) { 
-          const listener = () => {
-            channel.removeEventListener('bufferedamountlow', listener);
-            readSlice();
-          };
-          channel.addEventListener('bufferedamountlow', listener);
-        } else {
-          const slice = file.slice(offset, offset + chunkSize);
-          reader.readAsArrayBuffer(slice);
-        }
-      };
-
-      channel.bufferedAmountLowThreshold = 512 * 1024; 
-      readSlice();
-    };
-
-    // ==========================================
-    // STEP 1: HOST GENERATES OFFER KEY
-    // ==========================================
-    const startHosting = async (selectedFile) => {
-      currentFile = selectedFile;
-      currentMode = 'sender';
-      switchView('gathering');
-
-      try {
-        peerConnection = new RTCPeerConnection(rtcConfig);
-
-        peerConnection.oniceconnectionstatechange = () => {
-          if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
-            if (progress < 100) showError("CONNECTION FAILED. STRICT FIREWALL BLOCKED TUNNEL.");
-          }
-        };
-
-        // Pre-negotiated channel ensures instant connection once keys are exchanged
-        const channel = peerConnection.createDataChannel('fardomax-transfer', { negotiated: true, id: 0 });
-        dataChannel = channel;
-        setupDataChannel(channel, selectedFile);
-
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-
-        // Wait for all ICE candidates to be gathered into the localDescription
-        await gatherIce(peerConnection);
-
-        // Convert the complete local description into a Base64 string
-        const inviteKey = encodeKey(peerConnection.localDescription);
-        
-        elements.hostInviteKey.value = inviteKey;
-        switchView('hostSignaling');
-
-      } catch (err) {
-        console.error(err);
-        showError("FAILED TO INITIATE HOST TUNNEL. CHECK BROWSER PERMISSIONS.");
-      }
-    };
-
-    // ==========================================
-    // STEP 2: RECEIVER GENERATES RESPONSE KEY
-    // ==========================================
-    const joinRoom = async (inviteKeyString) => {
-      currentMode = 'receiver';
-      switchView('gathering');
-
-      try {
-        const offerObj = decodeKey(inviteKeyString);
-
-        peerConnection = new RTCPeerConnection(rtcConfig);
-
-        peerConnection.oniceconnectionstatechange = () => {
-          if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
-            if (progress < 100) showError("CONNECTION FAILED. STRICT FIREWALL BLOCKED TUNNEL.");
-          }
-        };
-
-        const channel = peerConnection.createDataChannel('fardomax-transfer', { negotiated: true, id: 0 });
-        dataChannel = channel;
-        setupDataChannel(channel, null);
-
-        // Apply Host's Offer
-        await peerConnection.setRemoteDescription(offerObj);
-
-        // Generate Receiver's Answer
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-
-        // Wait for all Receiver ICE candidates
-        await gatherIce(peerConnection);
-
-        // Convert complete answer into Base64 string
-        const responseKey = encodeKey(peerConnection.localDescription);
-        
-        elements.receiverResponseKey.value = responseKey;
-        switchView('receiverSignaling');
-
-      } catch (err) {
-        console.error(err);
-        showError("INVALID INVITE KEY PROVIDED. CONNECTION ABORTED.");
-      }
-    };
-
-    // ==========================================
-    // STEP 3: HOST APPLIES RESPONSE & CONNECTS
-    // ==========================================
-    const finalizeHosting = async (responseKeyString) => {
-      try {
-        const answerObj = decodeKey(responseKeyString);
-        
-        // Applying the remote description will instantly trigger the DataChannel to open!
-        await peerConnection.setRemoteDescription(answerObj);
-      } catch (err) {
-        console.error(err);
-        showError("INVALID RESPONSE KEY PROVIDED. TUNNEL COLLAPSED.");
-      }
-    };
-
-    // Cleanup on exit
-    window.addEventListener('beforeunload', () => {
-      if (peerConnection) peerConnection.close();
-      if (downloadBlobUrl) URL.revokeObjectURL(downloadBlobUrl);
+      conn.on('error', err => {
+        setStatus('send-status', 'Connection error: ' + err.message, 'error');
+        setPeerDot('send', 'error', 'ERROR');
+      });
     });
 
-  </script>
+    senderPeer.on('error', err => {
+      setStatus('send-status', 'Peer error: ' + err.type + ' — ' + err.message, 'error');
+      setPeerDot('send', 'error', 'ERROR');
+      btn.disabled = false;
+      btn.textContent = '◈ GENERATE SECURE LINK';
+    });
+
+  } catch (e) {
+    setStatus('send-status', 'Failed to initialize: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '◈ GENERATE SECURE LINK';
+  }
+}
+
+async function sendAllFiles(conn) {
+  const progSection = document.getElementById('send-progress');
+  progSection.classList.add('visible');
+
+  for (let fi = 0; fi < selectedFiles.length; fi++) {
+    const file = selectedFiles[fi];
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+    // Send file metadata
+    conn.send(JSON.stringify({
+      type: 'meta', name: file.name, size: file.size,
+      totalChunks, fileIndex: fi, totalFiles: selectedFiles.length
+    }));
+
+    await new Promise(r => setTimeout(r, 100));
+
+    let offset = 0; let chunkIdx = 0;
+    let startTime = Date.now(); let bytesSent = 0;
+
+    while (offset < file.size) {
+      const slice = file.slice(offset, offset + CHUNK_SIZE);
+      const buf = await slice.arrayBuffer();
+      const enc = await encryptChunk(buf);
+
+      // Wait if buffer is getting full
+      while (conn.dataChannel && conn.dataChannel.bufferedAmount > 2 * 1024 * 1024) {
+        await new Promise(r => setTimeout(r, 50));
+      }
+
+      conn.send(enc);
+
+      offset += buf.byteLength;
+      bytesSent += buf.byteLength;
+      chunkIdx++;
+
+      const pct = Math.round((offset / file.size) * 100);
+      const elapsed = (Date.now() - startTime) / 1000;
+      const speed = elapsed > 0 ? fmtBytes(bytesSent / elapsed) + '/s' : '—';
+
+      document.getElementById('send-bar').style.width = pct + '%';
+      document.getElementById('send-pct').textContent = pct + '%';
+      document.getElementById('send-sent').textContent = fmtBytes(offset);
+      document.getElementById('send-total').textContent = fmtBytes(file.size);
+      document.getElementById('send-speed').textContent = speed;
+    }
+
+    // EOF signal
+    conn.send(JSON.stringify({ type: 'eof', fileIndex: fi }));
+    setStatus('send-status', `✓ File ${fi + 1}/${selectedFiles.length} sent: ${file.name}`);
+  }
+
+  conn.send(JSON.stringify({ type: 'done' }));
+  setPeerDot('send', 'online', 'ALL FILES SENT');
+  setStatus('send-status', '✓ All files transmitted successfully!', 'success');
+  document.getElementById('send-bar').style.width = '100%';
+  document.getElementById('send-pct').textContent = '100%';
+  showToast('All files sent!', 'success');
+}
+
+/* ── RECEIVER FLOW ── */
+async function startReceiving() {
+  const input = document.getElementById('recv-url-input').value.trim();
+  if (!input) { showToast('Please paste a share link', 'error'); return; }
+
+  let peerID, keyHex;
+  try {
+    const hash = input.includes('#') ? input.split('#')[1] : input;
+    const parts = hash.split('|');
+    peerID = parts[0]; keyHex = parts[1];
+    if (!peerID || !keyHex) throw new Error('Invalid link format');
+  } catch (e) {
+    setStatus('recv-status', 'Invalid share link format. Please check and try again.', 'error');
+    return;
+  }
+
+  await importKey(keyHex);
+
+  const btn = document.getElementById('recv-btn');
+  btn.disabled = true;
+  btn.textContent = '◌ CONNECTING…';
+  setPeerDot('recv', 'connecting', 'CONNECTING...');
+  setStatus('recv-status', 'Connecting to sender...', 'info');
+
+  try {
+    recvPeer = new Peer({
+      host: '0.peerjs.com', port: 443, path: '/',
+      secure: true, debug: 0,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:global.stun.twilio.com:3478?transport=udp' }
+        ]
+      }
+    });
+
+    recvPeer.on('open', () => {
+      const conn = recvPeer.connect(peerID, { reliable: true });
+      conn.on('open', () => {
+        setPeerDot('recv', 'online', 'CONNECTED — RECEIVING');
+        setStatus('recv-status', '↔ Connected! Receiving files…');
+        btn.textContent = '◉ RECEIVING…';
+        receiveFiles(conn);
+      });
+      conn.on('error', err => {
+        setStatus('recv-status', 'Connection error: ' + err.message, 'error');
+        setPeerDot('recv', 'error', 'ERROR');
+        btn.disabled = false; btn.textContent = '◈ CONNECT & RECEIVE';
+      });
+    });
+
+    recvPeer.on('error', err => {
+      setStatus('recv-status', 'Could not connect: ' + err.type + '. Sender may be offline.', 'error');
+      setPeerDot('recv', 'error', 'ERROR');
+      btn.disabled = false; btn.textContent = '◈ CONNECT & RECEIVE';
+    });
+
+  } catch (e) {
+    setStatus('recv-status', 'Failed: ' + e.message, 'error');
+    btn.disabled = false; btn.textContent = '◈ CONNECT & RECEIVE';
+  }
+}
+
+function receiveFiles(conn) {
+  const progSection = document.getElementById('recv-progress');
+  progSection.classList.add('visible');
+
+  let currentMeta = null;
+  let chunks = [];
+  let receivedBytes = 0;
+  let startTime = null;
+
+  conn.on('data', async (data) => {
+    if (typeof data === 'string') {
+      const msg = JSON.parse(data);
+
+      if (msg.type === 'meta') {
+        currentMeta = msg;
+        chunks = []; receivedBytes = 0;
+        startTime = Date.now();
+        setStatus('recv-status', `↓ Receiving (${msg.fileIndex + 1}/${msg.totalFiles}): ${msg.name}`);
+        document.getElementById('recv-total').textContent = fmtBytes(msg.size);
+      }
+
+      if (msg.type === 'eof' && currentMeta) {
+        const allChunks = new Uint8Array(chunks.reduce((a, c) => a + c.byteLength, 0));
+        let offset = 0;
+        for (const chunk of chunks) {
+          allChunks.set(new Uint8Array(chunk), offset);
+          offset += chunk.byteLength;
+        }
+        const blob = new Blob([allChunks]);
+        renderDownload(currentMeta.name, blob, currentMeta.size);
+        setStatus('recv-status', `✓ Received: ${currentMeta.name}`, 'success');
+        chunks = [];
+      }
+
+      if (msg.type === 'done') {
+        setPeerDot('recv', 'online', 'TRANSFER COMPLETE');
+        setStatus('recv-status', '✓ All files received!', 'success');
+        document.getElementById('recv-bar').style.width = '100%';
+        document.getElementById('recv-pct').textContent = '100%';
+        showToast('All files received!', 'success');
+      }
+
+    } else {
+      // Binary chunk — decrypt
+      if (!currentMeta) return;
+      try {
+        const dec = await decryptChunk(data);
+        chunks.push(dec);
+        receivedBytes += dec.byteLength;
+
+        const pct = Math.min(100, Math.round((receivedBytes / currentMeta.size) * 100));
+        const elapsed = (Date.now() - startTime) / 1000;
+        const speed = elapsed > 0 ? fmtBytes(receivedBytes / elapsed) + '/s' : '—';
+
+        document.getElementById('recv-bar').style.width = pct + '%';
+        document.getElementById('recv-pct').textContent = pct + '%';
+        document.getElementById('recv-rcvd').textContent = fmtBytes(receivedBytes);
+        document.getElementById('recv-speed').textContent = speed;
+      } catch (e) {
+        setStatus('recv-status', 'Decryption error — key mismatch?', 'error');
+      }
+    }
+  });
+}
+
+function renderDownload(name, blob, size) {
+  const dlArea = document.getElementById('dl-area');
+  dlArea.classList.add('visible');
+  const url = URL.createObjectURL(blob);
+  const card = document.createElement('div');
+  card.innerHTML = `
+    <div class="dl-file-card">
+      <div class="dl-file-icon">${getFileIcon(name)}</div>
+      <div class="dl-file-info">
+        <div class="dl-file-name">${name}</div>
+        <div class="dl-file-size">${fmtBytes(size)} · Decrypted ✓</div>
+      </div>
+    </div>
+    <a href="${url}" download="${name}" style="text-decoration:none;">
+      <button class="btn btn-success">⬇ DOWNLOAD ${name}</button>
+    </a>
+  `;
+  dlArea.appendChild(card);
+}
+
+function copyURL() {
+  const val = document.getElementById('url-display').value;
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'COPIED!';
+    btn.classList.add('copied');
+    showToast('Link copied to clipboard!', 'success');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    document.getElementById('url-display').select();
+    document.execCommand('copy');
+    showToast('Link copied!', 'success');
+  });
+}
+</script>
 </body>
 </html>
