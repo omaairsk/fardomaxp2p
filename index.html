@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fardomax Secure Transmit</title>
+  <title>Fardomax Secure Transmit - Serverless P2P</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -18,19 +18,13 @@
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
     
-    /* Custom Animations for the Loader */
     @keyframes spin-reverse {
       0% { transform: rotate(360deg); }
       100% { transform: rotate(0deg); }
     }
-    .animate-spin-reverse {
-      animation: spin-reverse 1.5s linear infinite;
-    }
-    .animate-spin-slow {
-      animation: spin 2s linear infinite;
-    }
+    .animate-spin-reverse { animation: spin-reverse 1.5s linear infinite; }
+    .animate-spin-slow { animation: spin 2s linear infinite; }
     
-    /* Background Pattern */
     .cyber-bg {
       background-image: 
         linear-gradient(to right, #0891b20a 1px, transparent 1px),
@@ -38,49 +32,14 @@
       background-size: 50px 50px;
     }
 
-    /* Hide elements by default using a utility class */
-    .d-none {
-      display: none !important;
+    .d-none { display: none !important; }
+
+    /* Custom Input Scrollbar for large keys */
+    input.key-input {
+      font-family: monospace;
+      letter-spacing: 0.1em;
     }
   </style>
-
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyA7ciMLzdJb6pfB2oqxIP9W8TpYQ51w5sY",
-    authDomain: "fardomax-e67f9.firebaseapp.com",
-    projectId: "fardomax-e67f9",
-    storageBucket: "fardomax-e67f9.firebasestorage.app",
-    messagingSenderId: "326155249818",
-    appId: "1:326155249818:web:8ef85129609033a9661723",
-    measurementId: "G-2TD1P881BJ"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
-
-
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyA7ciMLzdJb6pfB2oqxIP9W8TpYQ51w5sY",
-  authDomain: "fardomax-e67f9.firebaseapp.com",
-  databaseURL: "https://fardomax-e67f9-default-rtdb.firebaseio.com",
-  projectId: "fardomax-e67f9",
-  storageBucket: "fardomax-e67f9.firebasestorage.app",
-  messagingSenderId: "326155249818",
-  appId: "1:326155249818:web:8ef85129609033a9661723",
-  measurementId: "G-2TD1P881BJ"
-};
-  
 </head>
 <body class="min-h-screen text-cyan-50 relative overflow-x-hidden selection:bg-cyan-500/30">
 
@@ -106,7 +65,7 @@ const firebaseConfig = {
         FARDOMAX
       </h1>
       <p class="mt-2 text-cyan-500 font-mono tracking-[0.4em] text-sm font-bold opacity-80 flex items-center">
-        <i data-lucide="lock" class="w-3 h-3 mr-2"></i> SECURE TRANSMIT <i data-lucide="lock" class="w-3 h-3 ml-2"></i>
+        <i data-lucide="lock" class="w-3 h-3 mr-2"></i> PURE SERVERLESS P2P <i data-lucide="lock" class="w-3 h-3 ml-2"></i>
       </p>
     </header>
 
@@ -116,33 +75,33 @@ const firebaseConfig = {
       <!-- ============================================== -->
       <!-- STATE 1: IDLE (FILE SELECTOR) -->
       <!-- ============================================== -->
-      <div id="view-idle" class="w-full max-w-2xl transform transition-all duration-500 hover:scale-[1.01] flex flex-col items-center opacity-50 pointer-events-none grayscale transition-all duration-500">
+      <div id="view-idle" class="w-full max-w-2xl transform transition-all duration-500 hover:scale-[1.01] flex flex-col items-center">
         
-        <!-- Upload Box -->
+        <!-- Upload Box (Sender) -->
         <div id="upload-box" class="w-full border-2 border-dashed border-cyan-500/40 hover:border-cyan-300 bg-slate-900/50 backdrop-blur-sm transition-all duration-300 rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer group shadow-[0_0_20px_rgba(34,211,238,0.05)]">
           <input id="fileUpload" type="file" class="hidden" />
           <div class="bg-cyan-950 p-6 rounded-full mb-6 group-hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all duration-300">
             <i data-lucide="upload" class="w-12 h-12 text-cyan-400 group-hover:scale-110 transition-transform"></i>
           </div>
           <h2 class="text-2xl font-mono text-cyan-100 mb-3 font-bold tracking-wider text-center group-hover:text-cyan-400 transition-colors">
-            INITIALIZE DATA TARGET
+            HOST A FILE
           </h2>
-          <p id="auth-status-text" class="text-cyan-600/80 font-mono text-sm text-center mb-8 leading-relaxed">
-            ESTABLISHING SECURE NODE...
+          <p class="text-cyan-600/80 font-mono text-sm text-center mb-8 leading-relaxed">
+            CLICK TO SELECT PAYLOAD TO TRANSMIT
           </p>
           
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs font-mono text-emerald-400/80 w-full px-4 pointer-events-none">
-            <div class="flex flex-col items-center p-3 bg-slate-950 rounded-lg border border-slate-800"><i data-lucide="zap" class="w-5 h-5 mb-2 text-cyan-500"></i><span>UNLIMITED SPEED</span></div>
+            <div class="flex flex-col items-center p-3 bg-slate-950 rounded-lg border border-slate-800"><i data-lucide="server-off" class="w-5 h-5 mb-2 text-cyan-500"></i><span>100% SERVERLESS</span></div>
             <div class="flex flex-col items-center p-3 bg-slate-950 rounded-lg border border-slate-800"><i data-lucide="shield" class="w-5 h-5 mb-2 text-cyan-500"></i><span>E2E ENCRYPTED P2P</span></div>
             <div class="flex flex-col items-center p-3 bg-slate-950 rounded-lg border border-slate-800"><i data-lucide="terminal" class="w-5 h-5 mb-2 text-cyan-500"></i><span>NO SIZE LIMIT</span></div>
           </div>
         </div>
 
-        <!-- Receive Box -->
+        <!-- Receive Box (Receiver) -->
         <div class="mt-8 w-full">
           <div class="flex items-center w-full bg-slate-900/80 border border-emerald-500/40 rounded-xl overflow-hidden p-1 shadow-[0_0_20px_rgba(16,185,129,0.1)] focus-within:border-emerald-400 transition-colors">
-            <input id="joinInput" type="text" placeholder="AUTHENTICATING..." class="bg-transparent border-none text-emerald-100 font-mono w-full px-6 py-4 focus:outline-none placeholder-emerald-700 text-center tracking-[0.3em] font-bold" maxlength="6" disabled />
-            <button id="btn-intercept" disabled class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold font-mono px-8 py-4 transition-colors flex items-center h-full rounded-lg whitespace-nowrap opacity-50 cursor-not-allowed">
+            <input id="joinInput" type="text" placeholder="PASTE INVITE KEY HERE TO RECEIVE..." class="key-input bg-transparent border-none text-emerald-100 w-full px-6 py-4 focus:outline-none placeholder-emerald-700 text-center font-bold" />
+            <button id="btn-intercept" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold font-mono px-8 py-4 transition-colors flex items-center h-full rounded-lg whitespace-nowrap">
               <i data-lucide="download" class="w-5 h-5 mr-2"></i> INTERCEPT
             </button>
           </div>
@@ -150,57 +109,83 @@ const firebaseConfig = {
       </div>
 
       <!-- ============================================== -->
-      <!-- STATE 2: CONNECTING -->
+      <!-- STATE 2: GATHERING NETWORK ROUTES (LOADER) -->
       <!-- ============================================== -->
-      <div id="view-connecting" class="w-full flex flex-col items-center animate-in fade-in duration-500 d-none">
-        <!-- Loader -->
-        <div class="flex flex-col items-center justify-center space-y-6 my-8">
+      <div id="view-gathering" class="w-full flex flex-col items-center animate-in fade-in duration-500 d-none">
+        <div class="flex flex-col items-center justify-center space-y-6 my-12">
           <div class="relative w-28 h-28 flex items-center justify-center">
             <div class="absolute inset-0 border-t-2 border-cyan-400 rounded-full animate-spin"></div>
             <div class="absolute inset-2 border-r-2 border-emerald-400 rounded-full animate-spin-reverse"></div>
             <div class="absolute inset-4 border-b-2 border-cyan-500 rounded-full animate-spin-slow"></div>
             <div class="absolute inset-6 bg-cyan-500/10 rounded-full animate-pulse"></div>
-            <i data-lucide="zap" class="w-8 h-8 text-cyan-300 animate-pulse relative z-10"></i>
+            <i data-lucide="globe" class="w-8 h-8 text-cyan-300 animate-pulse relative z-10"></i>
           </div>
-          <div id="loader-text" class="font-mono text-cyan-400 text-sm tracking-widest uppercase h-6">
-            INITIALIZING FARDOMAX PROTOCOL...
+          <div class="font-mono text-cyan-400 text-sm tracking-widest uppercase h-6">
+            GATHERING P2P NETWORK ROUTES...
           </div>
-        </div>
-        
-        <!-- Sender Only Info -->
-        <div id="sender-info" class="w-full max-w-lg bg-slate-900/80 border border-cyan-500/30 rounded-xl p-8 mt-4 text-center backdrop-blur-md shadow-[0_0_40px_rgba(34,211,238,0.1)] d-none">
-          <h3 class="font-mono text-cyan-400 mb-2 text-sm tracking-widest flex items-center justify-center">
-            <i data-lucide="activity" class="w-4 h-4 mr-2 animate-pulse"></i> AWAITING PEER CONNECTION
-          </h3>
-          
-          <div class="my-8">
-            <p class="text-slate-400 text-xs mb-3 font-mono">SECURE PASSKEY:</p>
-            <div class="flex justify-center items-center space-x-4">
-              <div class="bg-slate-950 border-2 border-emerald-500/50 rounded-lg py-4 px-8 flex items-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                <span id="display-passkey" class="text-4xl font-mono text-emerald-400 tracking-[0.3em] font-extrabold">XXXXXX</span>
-              </div>
-              <button id="btn-copy-passkey" class="bg-emerald-900/30 border border-emerald-500/30 hover:bg-emerald-900/60 text-emerald-400 p-4 rounded-lg transition-all hover:shadow-[0_0_15px_rgba(16,185,129,0.4)] flex items-center" title="Copy Passkey">
-                <i data-lucide="copy" class="w-6 h-6"></i>
-              </button>
-            </div>
-          </div>
-
-          <p class="text-slate-500 text-xs mb-4 font-mono">Or share this direct encrypted link:</p>
-          
-          <div class="flex items-center bg-slate-950 border border-cyan-500/50 rounded-lg p-2 overflow-hidden shadow-inner">
-            <input id="display-url" type="text" readonly class="bg-transparent border-none text-cyan-300 w-full font-mono text-xs focus:outline-none px-3 select-all" />
-            <button id="btn-copy-url" class="bg-cyan-950 border border-cyan-500/30 hover:bg-cyan-900 text-cyan-400 p-3 rounded ml-2 transition-all hover:shadow-[0_0_10px_rgba(34,211,238,0.5)] flex items-center">
-              <i data-lucide="copy" class="w-4 h-4"></i>
-            </button>
-          </div>
-          <div class="mt-6 flex items-center justify-center space-x-2 text-xs font-mono text-amber-500/80 bg-amber-500/10 p-3 rounded">
-            <i data-lucide="alert-triangle" class="w-4 h-4"></i> <span>WARNING: DO NOT CLOSE TAB DURING TRANSFER</span>
-          </div>
+          <p class="text-xs text-cyan-700 font-mono">Scanning local and public interfaces for direct connection paths.</p>
         </div>
       </div>
 
       <!-- ============================================== -->
-      <!-- STATE 3: TRANSFERRING -->
+      <!-- STATE 3: HOST SIGNALING EXCHANGE -->
+      <!-- ============================================== -->
+      <div id="view-host-signaling" class="w-full max-w-2xl bg-slate-900/80 border border-cyan-500/30 rounded-xl p-8 mt-4 text-center backdrop-blur-md shadow-[0_0_40px_rgba(34,211,238,0.1)] d-none">
+        <h3 class="font-mono text-cyan-400 mb-6 text-lg tracking-widest flex items-center justify-center border-b border-cyan-500/20 pb-4">
+          <i data-lucide="key" class="w-5 h-5 mr-3 text-cyan-300"></i> SECURE KEY EXCHANGE
+        </h3>
+        
+        <div class="my-6 w-full text-left">
+          <label class="text-cyan-400 text-xs font-mono mb-2 block font-bold">1. COPY THIS INVITE KEY AND SEND IT TO THE RECEIVER:</label>
+          <div class="flex items-center bg-slate-950 border border-cyan-500/50 rounded-lg p-2 overflow-hidden shadow-inner">
+            <input id="host-invite-key" type="text" readonly class="key-input bg-transparent border-none text-cyan-300 w-full text-sm focus:outline-none px-3 truncate" />
+            <button id="btn-copy-invite" class="bg-cyan-950 border border-cyan-500/30 hover:bg-cyan-900 text-cyan-400 px-4 py-3 rounded ml-2 transition-all hover:shadow-[0_0_10px_rgba(34,211,238,0.5)] flex items-center font-mono text-xs font-bold">
+              <i data-lucide="copy" class="w-4 h-4 mr-2"></i> COPY
+            </button>
+          </div>
+        </div>
+
+        <div class="my-8 w-full text-left">
+          <label class="text-emerald-400 text-xs font-mono mb-2 block font-bold">2. PASTE THEIR RESPONSE KEY HERE TO CONNECT:</label>
+          <div class="flex items-center w-full bg-slate-950 border border-emerald-500/40 rounded-lg overflow-hidden p-1 shadow-[0_0_20px_rgba(16,185,129,0.1)] focus-within:border-emerald-400 transition-colors">
+            <input id="host-response-input" type="text" placeholder="PASTE RESPONSE KEY..." class="key-input bg-transparent border-none text-emerald-100 w-full px-4 py-3 focus:outline-none placeholder-emerald-800 text-sm" />
+            <button id="btn-finalize-host" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold font-mono px-6 py-3 transition-colors flex items-center rounded-md whitespace-nowrap">
+              <i data-lucide="zap" class="w-4 h-4 mr-2"></i> CONNECT
+            </button>
+          </div>
+        </div>
+        
+        <div class="mt-6 flex items-center justify-center space-x-2 text-xs font-mono text-amber-500/80 bg-amber-500/10 p-3 rounded">
+          <i data-lucide="alert-triangle" class="w-4 h-4"></i> <span>DO NOT REFRESH OR CLOSE THIS TAB</span>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- STATE 4: RECEIVER SIGNALING EXCHANGE -->
+      <!-- ============================================== -->
+      <div id="view-receiver-signaling" class="w-full max-w-2xl bg-slate-900/80 border border-emerald-500/30 rounded-xl p-8 mt-4 text-center backdrop-blur-md shadow-[0_0_40px_rgba(16,185,129,0.1)] d-none">
+        <h3 class="font-mono text-emerald-400 mb-6 text-lg tracking-widest flex items-center justify-center border-b border-emerald-500/20 pb-4">
+          <i data-lucide="key" class="w-5 h-5 mr-3 text-emerald-300"></i> CONNECTION ACCEPTED
+        </h3>
+        
+        <div class="my-6 w-full text-left">
+          <label class="text-emerald-400 text-xs font-mono mb-2 block font-bold">1. COPY THIS RESPONSE KEY AND SEND IT BACK TO THE HOST:</label>
+          <div class="flex items-center bg-slate-950 border border-emerald-500/50 rounded-lg p-2 overflow-hidden shadow-inner">
+            <input id="receiver-response-key" type="text" readonly class="key-input bg-transparent border-none text-emerald-300 w-full text-sm focus:outline-none px-3 truncate" />
+            <button id="btn-copy-response" class="bg-emerald-950 border border-emerald-500/30 hover:bg-emerald-900 text-emerald-400 px-4 py-3 rounded ml-2 transition-all hover:shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center font-mono text-xs font-bold">
+              <i data-lucide="copy" class="w-4 h-4 mr-2"></i> COPY
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-10 mb-4 text-center animate-pulse flex flex-col items-center">
+          <i data-lucide="radio-receiver" class="w-10 h-10 text-cyan-500 mb-4"></i>
+          <p class="text-cyan-400 font-mono text-sm tracking-widest">WAITING FOR HOST TO CONNECT TUNNEL...</p>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- STATE 5: TRANSFERRING -->
       <!-- ============================================== -->
       <div id="view-transferring" class="w-full max-w-xl bg-slate-900/90 border border-cyan-500/40 rounded-xl p-8 shadow-[0_0_50px_rgba(34,211,238,0.15)] relative overflow-hidden backdrop-blur-md d-none">
         <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-800">
@@ -233,14 +218,14 @@ const firebaseConfig = {
           <div class="flex justify-between items-center pt-1">
             <span class="text-cyan-600">SECURITY PROTOCOL:</span>
             <span class="text-emerald-500 flex items-center">
-              <i data-lucide="lock" class="w-3 h-3 mr-2"></i> QUANTUM DTLS-SRTP ACTIVE
+              <i data-lucide="lock" class="w-3 h-3 mr-2"></i> PURE P2P DTLS-SRTP ACTIVE
             </span>
           </div>
         </div>
       </div>
 
       <!-- ============================================== -->
-      <!-- STATE 4: COMPLETED -->
+      <!-- STATE 6: COMPLETED -->
       <!-- ============================================== -->
       <div id="view-completed" class="w-full max-w-lg bg-slate-900 border border-emerald-500/50 rounded-xl p-10 shadow-[0_0_60px_rgba(16,185,129,0.2)] text-center flex flex-col items-center animate-in zoom-in-95 duration-500 d-none">
         <div class="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mb-8 relative">
@@ -251,16 +236,16 @@ const firebaseConfig = {
         <p id="completed-filename" class="text-emerald-500/70 font-mono text-sm mb-10 max-w-[80%] truncate">Filename.ext</p>
         
         <a id="btn-download" href="#" class="d-none w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold font-mono py-4 px-8 rounded-lg flex items-center justify-center transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] transform hover:-translate-y-1">
-          <i data-lucide="download" class="w-6 h-6 mr-3"></i> DECRYPT & SAVE DATA
+          <i data-lucide="download" class="w-6 h-6 mr-3"></i> SAVE SECURE DATA
         </a>
         
-        <button id="btn-restart" class="d-none w-full bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold font-mono py-4 px-8 rounded-lg flex items-center justify-center transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.5)] transform hover:-translate-y-1">
+        <button id="btn-restart" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold font-mono py-4 px-8 rounded-lg flex items-center justify-center transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.5)] transform hover:-translate-y-1">
           <i data-lucide="refresh-cw" class="w-5 h-5 mr-3"></i> INITIATE NEW TRANSFER
         </button>
       </div>
 
       <!-- ============================================== -->
-      <!-- STATE 5: ERROR -->
+      <!-- STATE 7: ERROR -->
       <!-- ============================================== -->
       <div id="view-error" class="w-full max-w-lg bg-slate-900 border border-red-500/50 rounded-xl p-10 text-center flex flex-col items-center d-none">
         <div class="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
@@ -277,31 +262,30 @@ const firebaseConfig = {
     
     <!-- Footer -->
     <footer class="mt-12 text-center text-cyan-600/40 font-mono text-xs pb-4">
-      <p>FARDOMAX QUANTUM NETWORK © 2026 // P2P ENCRYPTED TRANSFER PROTOCOL</p>
+      <p>FARDOMAX QUANTUM NETWORK © 2026 // 100% SERVERLESS WEBRTC ENCRYPTED PROTOCOL</p>
     </footer>
   </div>
 
   <!-- Application Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+  <script>
     // --- INITIALIZE ICONS ---
     lucide.createIcons();
 
-    // --- DOM ELEMENTS (needed early for error catching) ---
+    // --- DOM ELEMENTS ---
     const elements = {
       uploadBox: document.getElementById('upload-box'),
       fileUpload: document.getElementById('fileUpload'),
-      authStatusText: document.getElementById('auth-status-text'),
       joinInput: document.getElementById('joinInput'),
       btnIntercept: document.getElementById('btn-intercept'),
-      senderInfo: document.getElementById('sender-info'),
-      displayPasskey: document.getElementById('display-passkey'),
-      displayUrl: document.getElementById('display-url'),
-      btnCopyPasskey: document.getElementById('btn-copy-passkey'),
-      btnCopyUrl: document.getElementById('btn-copy-url'),
+      
+      hostInviteKey: document.getElementById('host-invite-key'),
+      btnCopyInvite: document.getElementById('btn-copy-invite'),
+      hostResponseInput: document.getElementById('host-response-input'),
+      btnFinalizeHost: document.getElementById('btn-finalize-host'),
+      
+      receiverResponseKey: document.getElementById('receiver-response-key'),
+      btnCopyResponse: document.getElementById('btn-copy-response'),
+
       progressBar: document.getElementById('progress-bar'),
       progressText: document.getElementById('progress-text'),
       transferModeText: document.getElementById('transfer-mode-text'),
@@ -315,59 +299,21 @@ const firebaseConfig = {
       errorMessageText: document.getElementById('error-message-text'),
       toast: document.getElementById('toast'),
       toastMsg: document.getElementById('toast-msg'),
-      loaderText: document.getElementById('loader-text'),
       logoBtn: document.getElementById('logo-btn')
     };
 
     const views = {
       idle: document.getElementById('view-idle'),
-      connecting: document.getElementById('view-connecting'),
+      gathering: document.getElementById('view-gathering'),
+      hostSignaling: document.getElementById('view-host-signaling'),
+      receiverSignaling: document.getElementById('view-receiver-signaling'),
       transferring: document.getElementById('view-transferring'),
       completed: document.getElementById('view-completed'),
       error: document.getElementById('view-error')
     };
 
-    // =========================================================
-    // 🛑 STOP! PASTE YOUR FIREBASE CONFIGURATION HERE:
-    // =========================================================
-    // If you run this file directly on your computer (file://) or host it yourself,
-    // you MUST replace these empty strings with your actual Firebase Project keys.
-   // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyA7ciMLzdJb6pfB2oqxIP9W8TpYQ51w5sY",
-    authDomain: "fardomax-e67f9.firebaseapp.com",
-    projectId: "fardomax-e67f9",
-    storageBucket: "fardomax-e67f9.firebasestorage.app",
-    messagingSenderId: "326155249818",
-    appId: "1:326155249818:web:8ef85129609033a9661723",
-    measurementId: "G-2TD1P881BJ"
-  };
-    // Determine environment (Sandbox vs Local/Hosted)
-    const isSandbox = typeof __firebase_config !== 'undefined';
-    const finalConfig = isSandbox ? JSON.parse(__firebase_config) : myFirebaseConfig;
-
-    let app, auth, db, appId;
-
-    try {
-      // Validate configuration existence
-      if (!isSandbox && !finalConfig.apiKey) {
-        elements.authStatusText.innerHTML = "<span class='text-red-500 font-bold'>⚠️ FIREBASE CONFIG MISSING!</span><br/><span class='text-xs text-red-400 mt-2 block'>Open index.html in a text editor and paste your Firebase keys around Line 190.</span>";
-        elements.joinInput.placeholder = "SETUP REQUIRED";
-        throw new Error("Missing Firebase keys. Cannot initialize database.");
-      }
-
-      // Initialize Firebase normally if keys exist
-      app = initializeApp(finalConfig);
-      auth = getAuth(app);
-      db = getFirestore(app);
-      appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    } catch (err) {
-      console.error(err);
-      // We deliberately stop script execution here so it doesn't try to access undefined db
-    }
-
     // --- WEBRTC CONFIGURATION ---
+    // Using free public Google STUN servers to bypass basic firewalls
     const rtcConfig = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -377,19 +323,13 @@ const firebaseConfig = {
     };
 
     // --- GLOBAL APP STATE ---
-    let currentUser = null;
-    let currentMode = 'idle'; // 'idle', 'sender', 'receiver'
+    let currentMode = 'idle'; // 'sender', 'receiver'
     let currentFile = null;
-    let currentShareUrl = '';
-    let currentRoomId = '';
     let receivedFileMeta = null;
     let downloadBlobUrl = '';
     let peerConnection = null;
     let dataChannel = null;
-    let unsubRoom = null;
-    let initializedUrlCheck = false;
-    let processedCandidates = new Set();
-    let candidateQueue = [];
+    let progress = 0;
     
     let lastTick = Date.now();
     let bytesSinceTick = 0;
@@ -424,118 +364,76 @@ const firebaseConfig = {
       return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
     };
 
-    const handleCopy = (textToCopy) => {
+    const copyToClipboard = (inputElement) => {
       try {
-        const textArea = document.createElement("textarea");
-        textArea.value = textToCopy || currentShareUrl;
-        document.body.appendChild(textArea);
-        textArea.select();
+        inputElement.select();
         document.execCommand('copy');
-        document.body.removeChild(textArea);
-        showToast('COPIED TO CLIPBOARD');
+        showToast('SECURE KEY COPIED!');
       } catch (err) {
         showToast('ERROR: CLIPBOARD ACCESS DENIED');
       }
     };
 
     const resetApp = () => {
-      window.location.href = window.location.pathname;
+      window.location.reload();
     };
-
-    // Set up Loader Text Animation
-    const loaderMessages = [
-      "INITIALIZING FARDOMAX PROTOCOL...",
-      "BYPASSING NETWORK FIREWALLS...",
-      "ESTABLISHING SECURE P2P TUNNEL...",
-      "GENERATING E2E ENCRYPTION KEYS...",
-      "SYNCHRONIZING QUANTUM NODES...",
-    ];
-    let loaderMsgIdx = 0;
-    setInterval(() => {
-      loaderMsgIdx = (loaderMsgIdx + 1) % loaderMessages.length;
-      elements.loaderText.innerText = loaderMessages[loaderMsgIdx];
-    }, 2000);
 
     // Event Listeners for UI
     elements.logoBtn.addEventListener('click', resetApp);
     elements.btnReboot.addEventListener('click', resetApp);
     elements.btnRestart.addEventListener('click', resetApp);
-    elements.btnCopyPasskey.addEventListener('click', () => handleCopy(currentRoomId));
-    elements.btnCopyUrl.addEventListener('click', () => handleCopy(currentShareUrl));
+    
+    elements.btnCopyInvite.addEventListener('click', () => copyToClipboard(elements.hostInviteKey));
+    elements.btnCopyResponse.addEventListener('click', () => copyToClipboard(elements.receiverResponseKey));
     
     elements.uploadBox.addEventListener('click', () => {
-      if (!currentUser) return showToast("PLEASE WAIT, AUTHENTICATING...");
       elements.fileUpload.click();
     });
 
     elements.fileUpload.addEventListener('change', (e) => {
       if (e.target.files && e.target.files[0]) {
         startHosting(e.target.files[0]);
-        e.target.value = null; // reset
+        e.target.value = null; 
       }
     });
 
     elements.btnIntercept.addEventListener('click', () => {
-      const val = elements.joinInput.value.trim().toUpperCase();
+      const val = elements.joinInput.value.trim();
       if (val) joinRoom(val);
     });
-    
-    elements.joinInput.addEventListener('input', (e) => {
-      e.target.value = e.target.value.toUpperCase();
+
+    elements.btnFinalizeHost.addEventListener('click', () => {
+      const val = elements.hostResponseInput.value.trim();
+      if (val) finalizeHosting(val);
     });
-
-    // --- AUTHENTICATION INIT (Only runs if DB is valid) ---
-    if (app && auth && db) {
-      const initAuth = async () => {
-        try {
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-          } else {
-            await signInAnonymously(auth);
-          }
-        } catch (error) {
-          console.error("Auth error:", error);
-          showError("Failed to authenticate with Fardomax Network.");
-        }
-      };
-      initAuth();
-
-      onAuthStateChanged(auth, (user) => {
-        currentUser = user;
-        if (user) {
-          // Unlock Idle UI
-          views.idle.classList.remove('opacity-50', 'pointer-events-none', 'grayscale');
-          elements.authStatusText.innerText = "CLICK TO SELECT PAYLOAD FOR TRANSMISSION";
-          elements.joinInput.disabled = false;
-          elements.joinInput.placeholder = "ENTER PASSKEY TO RECEIVE";
-          elements.btnIntercept.disabled = false;
-          elements.btnIntercept.classList.remove('opacity-50', 'cursor-not-allowed');
-
-          // Check for URL room parameter once
-          if (!initializedUrlCheck) {
-            initializedUrlCheck = true;
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomParam = urlParams.get('room');
-            if (roomParam) {
-              joinRoom(roomParam);
-            }
-          }
-        }
-      });
-    }
 
     // --- WEBRTC LOGIC ---
 
-    const flushCandidateQueue = async () => {
-      if (!peerConnection || !peerConnection.remoteDescription) return;
-      for (const c of candidateQueue) {
-        try {
-          await peerConnection.addIceCandidate(new RTCIceCandidate(c));
-        } catch (e) {
-          console.error("Error adding queued ICE candidate", e);
+    // Encode/Decode SDP objects to safe Base64 strings for manual exchange
+    const encodeKey = (obj) => btoa(JSON.stringify(obj));
+    const decodeKey = (str) => JSON.parse(atob(str));
+
+    // Wait until WebRTC has found all possible network routes (ICE candidates)
+    const gatherIce = (pc) => {
+      return new Promise((resolve) => {
+        if (pc.iceGatheringState === 'complete') {
+          resolve();
+          return;
         }
-      }
-      candidateQueue = [];
+        const checkState = () => {
+          if (pc.iceGatheringState === 'complete') {
+            pc.removeEventListener('icegatheringstatechange', checkState);
+            resolve();
+          }
+        };
+        pc.addEventListener('icegatheringstatechange', checkState);
+        
+        // Failsafe: Continue after 3 seconds even if strictly not 'complete' to prevent infinite hanging
+        setTimeout(() => {
+          pc.removeEventListener('icegatheringstatechange', checkState);
+          resolve();
+        }, 3000);
+      });
     };
 
     const setupDataChannel = (channel, fileToSend) => {
@@ -559,7 +457,7 @@ const firebaseConfig = {
       };
 
       channel.onerror = (error) => {
-        showError("FATAL SECURE CHANNEL ERROR.");
+        showError("FATAL SECURE TUNNEL ERROR.");
       };
 
       let receiveBuffer = [];
@@ -581,7 +479,6 @@ const firebaseConfig = {
             downloadBlobUrl = URL.createObjectURL(blob);
             elements.btnDownload.href = downloadBlobUrl;
             elements.btnDownload.download = expectedMeta?.name || 'Fardomax_Download';
-            
             completeTransfer();
           }
         } else {
@@ -600,8 +497,8 @@ const firebaseConfig = {
           }
 
           if (expectedMeta) {
-            const pct = Math.floor((receivedBytes / expectedMeta.size) * 100);
-            updateProgress(pct);
+            progress = Math.floor((receivedBytes / expectedMeta.size) * 100);
+            updateProgress(progress);
           }
         }
       };
@@ -613,15 +510,14 @@ const firebaseConfig = {
     };
 
     const completeTransfer = () => {
+      progress = 100;
       updateProgress(100);
       switchView('completed');
       elements.completedFilename.innerText = currentFile?.name || receivedFileMeta?.name || 'Unknown_File';
       
       if (currentMode === 'receiver') {
         elements.btnDownload.classList.remove('d-none');
-        elements.btnRestart.classList.add('d-none');
       } else {
-        elements.btnRestart.classList.remove('d-none');
         elements.btnDownload.classList.add('d-none');
       }
     };
@@ -637,7 +533,7 @@ const firebaseConfig = {
         mime: file.type
       }));
 
-      const chunkSize = 16384; 
+      const chunkSize = 16384; // 16KB for max WebRTC cross-browser stability
       const reader = new FileReader();
       let offset = 0;
 
@@ -655,7 +551,8 @@ const firebaseConfig = {
           bytesSinceTick = 0;
         }
         
-        updateProgress(Math.floor((offset / file.size) * 100));
+        progress = Math.floor((offset / file.size) * 100);
+        updateProgress(progress);
 
         if (offset < file.size) {
           readSlice();
@@ -684,181 +581,107 @@ const firebaseConfig = {
       readSlice();
     };
 
+    // ==========================================
+    // STEP 1: HOST GENERATES OFFER KEY
+    // ==========================================
     const startHosting = async (selectedFile) => {
-      if (!currentUser) return showToast("PLEASE WAIT, AUTHENTICATING...");
-      
       currentFile = selectedFile;
       currentMode = 'sender';
-      switchView('connecting');
-      elements.senderInfo.classList.remove('d-none');
+      switchView('gathering');
 
-      currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-      elements.displayPasskey.innerText = currentRoomId;
-      
-      const url = new URL(window.location.href);
-      url.searchParams.set('room', currentRoomId);
-      currentShareUrl = url.toString();
-      elements.displayUrl.value = currentShareUrl;
-
-      // Ensure we query the right DB path based on our environment
-      const roomRef = isSandbox 
-        ? doc(db, 'artifacts', appId, 'public', 'data', 'fardomax_rooms', currentRoomId)
-        : doc(db, 'fardomax_rooms', currentRoomId);
-      
       try {
-        await setDoc(roomRef, {
-          callerCandidates: [],
-          calleeCandidates: [],
-          createdAt: new Date().toISOString()
-        });
+        peerConnection = new RTCPeerConnection(rtcConfig);
+
+        peerConnection.oniceconnectionstatechange = () => {
+          if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
+            if (progress < 100) showError("CONNECTION FAILED. STRICT FIREWALL BLOCKED TUNNEL.");
+          }
+        };
+
+        // Pre-negotiated channel ensures instant connection once keys are exchanged
+        const channel = peerConnection.createDataChannel('fardomax-transfer', { negotiated: true, id: 0 });
+        dataChannel = channel;
+        setupDataChannel(channel, selectedFile);
+
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+
+        // Wait for all ICE candidates to be gathered into the localDescription
+        await gatherIce(peerConnection);
+
+        // Convert the complete local description into a Base64 string
+        const inviteKey = encodeKey(peerConnection.localDescription);
+        
+        elements.hostInviteKey.value = inviteKey;
+        switchView('hostSignaling');
+
       } catch (err) {
         console.error(err);
-        showError("DATABASE CREATION FAILED.");
-        return;
+        showError("FAILED TO INITIATE HOST TUNNEL. CHECK BROWSER PERMISSIONS.");
       }
-
-      peerConnection = new RTCPeerConnection(rtcConfig);
-
-      peerConnection.oniceconnectionstatechange = () => {
-        if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
-          showError("CONNECTION FAILED. STRICT FIREWALL BLOCKED TUNNEL.");
-        }
-      };
-
-      const channel = peerConnection.createDataChannel('fardomax-transfer', { negotiated: true, id: 0 });
-      dataChannel = channel;
-      setupDataChannel(channel, selectedFile);
-
-      peerConnection.onicecandidate = async (event) => {
-        if (event.candidate) {
-          try {
-            await updateDoc(roomRef, {
-              callerCandidates: arrayUnion(JSON.stringify(event.candidate.toJSON()))
-            });
-          } catch (e) {
-            console.warn("ICE Sync delayed:", e.message);
-          }
-        }
-      };
-
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-
-      await updateDoc(roomRef, {
-        offer: { type: offer.type, sdp: offer.sdp }
-      });
-
-      unsubRoom = onSnapshot(roomRef, async (snapshot) => {
-        const data = snapshot.data();
-        if (!data) return;
-
-        if (!peerConnection.remoteDescription && data.answer) {
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-          flushCandidateQueue();
-        }
-
-        if (data.calleeCandidates) {
-          data.calleeCandidates.forEach(cStr => {
-            if (!processedCandidates.has(cStr)) {
-              processedCandidates.add(cStr);
-              const c = JSON.parse(cStr);
-              if (peerConnection.remoteDescription) {
-                peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
-              } else {
-                candidateQueue.push(c);
-              }
-            }
-          });
-        }
-      }, (err) => {
-        console.error(err);
-        const msg = err.code === 'permission-denied' 
-          ? "ACCESS DENIED: Database requires permissions configuration." 
-          : `SYNC ERROR: ${err.message}`;
-        showError(msg);
-      });
     };
 
-    const joinRoom = async (id) => {
-      if (!currentUser) return showToast("PLEASE WAIT, AUTHENTICATING...");
-      
-      const cleanId = id.trim().toUpperCase();
+    // ==========================================
+    // STEP 2: RECEIVER GENERATES RESPONSE KEY
+    // ==========================================
+    const joinRoom = async (inviteKeyString) => {
       currentMode = 'receiver';
-      currentRoomId = cleanId;
-      switchView('connecting');
-      elements.senderInfo.classList.add('d-none');
+      switchView('gathering');
 
-      peerConnection = new RTCPeerConnection(rtcConfig);
+      try {
+        const offerObj = decodeKey(inviteKeyString);
 
-      peerConnection.oniceconnectionstatechange = () => {
-        if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
-          showError("CONNECTION FAILED. STRICT FIREWALL BLOCKED TUNNEL.");
-        }
-      };
+        peerConnection = new RTCPeerConnection(rtcConfig);
 
-      const channel = peerConnection.createDataChannel('fardomax-transfer', { negotiated: true, id: 0 });
-      dataChannel = channel;
-      setupDataChannel(channel, null);
-
-      const roomRef = isSandbox 
-        ? doc(db, 'artifacts', appId, 'public', 'data', 'fardomax_rooms', cleanId)
-        : doc(db, 'fardomax_rooms', cleanId);
-
-      peerConnection.onicecandidate = async (event) => {
-        if (event.candidate) {
-          try {
-            await updateDoc(roomRef, {
-              calleeCandidates: arrayUnion(JSON.stringify(event.candidate.toJSON()))
-            });
-          } catch (e) {
-            console.warn("ICE Sync delayed:", e.message);
+        peerConnection.oniceconnectionstatechange = () => {
+          if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
+            if (progress < 100) showError("CONNECTION FAILED. STRICT FIREWALL BLOCKED TUNNEL.");
           }
-        }
-      };
-      
-      unsubRoom = onSnapshot(roomRef, async (snapshot) => {
-        const data = snapshot.data();
-        if (!data) {
-          showError("TUNNEL NOT FOUND OR EXPIRED. CHECK PASSKEY.");
-          return;
-        }
+        };
 
-        if (!peerConnection.remoteDescription && data.offer) {
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-          const answer = await peerConnection.createAnswer();
-          await peerConnection.setLocalDescription(answer);
-          
-          await updateDoc(roomRef, {
-            answer: { type: answer.type, sdp: answer.sdp }
-          });
-          flushCandidateQueue();
-        }
+        const channel = peerConnection.createDataChannel('fardomax-transfer', { negotiated: true, id: 0 });
+        dataChannel = channel;
+        setupDataChannel(channel, null);
 
-        if (data.callerCandidates) {
-          data.callerCandidates.forEach(cStr => {
-            if (!processedCandidates.has(cStr)) {
-              processedCandidates.add(cStr);
-              const c = JSON.parse(cStr);
-              if (peerConnection.remoteDescription) {
-                peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
-              } else {
-                candidateQueue.push(c);
-              }
-            }
-          });
-        }
-      }, (err) => {
+        // Apply Host's Offer
+        await peerConnection.setRemoteDescription(offerObj);
+
+        // Generate Receiver's Answer
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+
+        // Wait for all Receiver ICE candidates
+        await gatherIce(peerConnection);
+
+        // Convert complete answer into Base64 string
+        const responseKey = encodeKey(peerConnection.localDescription);
+        
+        elements.receiverResponseKey.value = responseKey;
+        switchView('receiverSignaling');
+
+      } catch (err) {
         console.error(err);
-        const msg = err.code === 'permission-denied' 
-          ? "ACCESS DENIED: Database requires permissions configuration." 
-          : `SYNC ERROR: ${err.message}`;
-        showError(msg);
-      });
+        showError("INVALID INVITE KEY PROVIDED. CONNECTION ABORTED.");
+      }
+    };
+
+    // ==========================================
+    // STEP 3: HOST APPLIES RESPONSE & CONNECTS
+    // ==========================================
+    const finalizeHosting = async (responseKeyString) => {
+      try {
+        const answerObj = decodeKey(responseKeyString);
+        
+        // Applying the remote description will instantly trigger the DataChannel to open!
+        await peerConnection.setRemoteDescription(answerObj);
+      } catch (err) {
+        console.error(err);
+        showError("INVALID RESPONSE KEY PROVIDED. TUNNEL COLLAPSED.");
+      }
     };
 
     // Cleanup on exit
     window.addEventListener('beforeunload', () => {
-      if (unsubRoom) unsubRoom();
       if (peerConnection) peerConnection.close();
       if (downloadBlobUrl) URL.revokeObjectURL(downloadBlobUrl);
     });
