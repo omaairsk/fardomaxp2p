@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security — Fardomax Secure Transmit</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#020408;--bg2:#050d15;--panel:rgba(0,200,255,0.04);--border:rgba(0,200,255,0.18);--cyan:#00c8ff;--cyan2:#00ffcc;--red:#ff2d55;--gold:#ffd700;--text:#c8eeff;--dim:rgba(200,238,255,0.45);--glow:0 0 20px rgba(0,200,255,0.5)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;overflow-x:hidden}
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+.scanlines{position:fixed;inset:0;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none}
+header{position:relative;z-index:1;padding:22px 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(0,200,255,0.07),transparent)}
+header::after{content:'';position:absolute;bottom:-1px;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:var(--glow)}
+.logo{display:flex;align-items:center;gap:14px;text-decoration:none}
+.logo-icon{width:40px;height:40px}.logo-icon svg{width:100%;height:100%}
+.logo-name{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;letter-spacing:3px;color:var(--cyan);text-shadow:var(--glow);line-height:1}
+.logo-tagline{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--cyan2);text-transform:uppercase;margin-top:3px}
+.nav-back{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--dim);text-decoration:none;padding:8px 16px;border:1px solid var(--border);border-radius:2px;transition:all .2s;background:var(--panel)}
+.nav-back:hover{color:var(--cyan);border-color:var(--cyan)}
+.page-hero{position:relative;z-index:1;text-align:center;padding:70px 40px 50px;border-bottom:1px solid var(--border)}
+.page-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 50% 0%,rgba(0,200,255,0.07),transparent);pointer-events:none}
+.page-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 18px;border:1px solid rgba(0,200,255,0.3);border-radius:2px;background:rgba(0,200,255,0.06);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--cyan2);text-transform:uppercase;margin-bottom:24px}
+.page-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan2);box-shadow:0 0 6px var(--cyan2);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.page-title{font-family:'Orbitron',monospace;font-size:clamp(28px,4vw,52px);font-weight:900;color:var(--text);letter-spacing:2px;margin-bottom:16px;line-height:1.2}
+.page-title span{color:transparent;-webkit-text-stroke:1px var(--cyan)}
+.page-subtitle{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--dim);letter-spacing:2px;line-height:1.8;max-width:600px;margin:0 auto}
+.page-content{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:60px 40px 80px;display:flex;flex-direction:column;gap:40px}
+.section{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:32px;position:relative;overflow:hidden;animation:fadein .5s ease both}
+.section::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:var(--glow)}
+@keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.section:nth-child(2){animation-delay:.06s}.section:nth-child(3){animation-delay:.12s}.section:nth-child(4){animation-delay:.18s}.section:nth-child(5){animation-delay:.24s}.section:nth-child(6){animation-delay:.3s}.section:nth-child(7){animation-delay:.36s}
+.pc{position:absolute;width:10px;height:10px;border-color:var(--cyan);border-style:solid;opacity:.6}
+.pc.tl{top:-1px;left:-1px;border-width:2px 0 0 2px}.pc.tr{top:-1px;right:-1px;border-width:2px 2px 0 0}.pc.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px}.pc.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+.sec-hdr{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.sec-num{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--cyan);letter-spacing:2px;padding:4px 10px;border:1px solid rgba(0,200,255,0.3);border-radius:2px;background:rgba(0,200,255,0.08);flex-shrink:0}
+.sec-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--text);letter-spacing:1px}
+.sec-icon{font-size:22px;flex-shrink:0}
+.sec-body{font-size:13px;color:var(--dim);line-height:1.9;letter-spacing:.3px}
+.sec-body p{margin-bottom:14px}.sec-body p:last-child{margin-bottom:0}
+.sec-body strong{color:var(--text)}.sec-body code{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--cyan2);background:rgba(0,255,200,0.08);padding:2px 6px;border-radius:2px}
+.plist{list-style:none;padding:0;margin:12px 0;display:flex;flex-direction:column;gap:9px}
+.plist li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--dim);line-height:1.7}
+.plist li::before{content:'◈';color:var(--cyan);font-size:10px;flex-shrink:0;margin-top:3px}
+.plist li strong{color:var(--text)}
+
+/* CRYPTO VISUAL */
+.crypto-flow{margin:20px 0;display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center}
+.cf-box{padding:12px 18px;background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.2);border-radius:3px;text-align:center;min-width:120px}
+.cf-box .cf-ico{font-size:22px;margin-bottom:6px;display:block}
+.cf-box .cf-title{font-family:'Orbitron',monospace;font-size:10px;color:var(--cyan);letter-spacing:1px;margin-bottom:4px}
+.cf-box .cf-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.5px}
+.cf-arrow{font-family:'Orbitron',monospace;font-size:18px;color:var(--cyan);padding:0 6px;opacity:.6;flex-shrink:0}
+
+/* THREAT MODEL TABLE */
+.threat-table{width:100%;border-collapse:collapse;margin:18px 0;font-size:12px}
+.threat-table th{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan2);text-transform:uppercase;padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;background:rgba(0,200,255,0.04)}
+.threat-table td{padding:11px 14px;border-bottom:1px solid rgba(0,200,255,0.08);color:var(--dim);line-height:1.6;vertical-align:top}
+.threat-table td strong{color:var(--text)}
+.threat-table tr:last-child td{border-bottom:none}
+.tag-blocked{display:inline-block;padding:2px 8px;background:rgba(0,255,200,0.1);border:1px solid rgba(0,255,200,.3);border-radius:2px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--cyan2);letter-spacing:1px}
+.tag-mitigated{display:inline-block;padding:2px 8px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,.3);border-radius:2px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:1px}
+.tag-user{display:inline-block;padding:2px 8px;background:rgba(200,238,255,0.08);border:1px solid rgba(200,238,255,.2);border-radius:2px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:1px}
+
+/* SPEC CARDS */
+.spec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:18px 0}
+.spec-card{padding:18px;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.15);border-radius:3px}
+.spec-card .sp-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:6px}
+.spec-card .sp-value{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--cyan);letter-spacing:1px;margin-bottom:4px}
+.spec-card .sp-desc{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.5px;line-height:1.6}
+
+/* ALERT BOX */
+.alert-box{margin:18px 0;padding:16px 18px;background:rgba(255,45,85,0.06);border:1px solid rgba(255,45,85,0.25);border-radius:3px}
+.alert-box .al-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--red);text-transform:uppercase;margin-bottom:8px}
+.alert-box p{font-size:12px;color:var(--dim);line-height:1.8}
+.alert-box p strong{color:var(--text)}
+
+/* BEST PRACTICES */
+.bp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.bp-card{padding:16px;border-radius:3px}
+.bp-card.do{background:rgba(0,255,200,0.04);border:1px solid rgba(0,255,200,.2)}
+.bp-card.dont{background:rgba(255,45,85,0.04);border:1px solid rgba(255,45,85,.2)}
+.bp-label{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:2px;margin-bottom:12px}
+.bp-card.do .bp-label{color:var(--cyan2)}.bp-card.dont .bp-label{color:var(--red)}
+.bp-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:7px}
+.bp-list li{display:flex;align-items:flex-start;gap:8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.5px;line-height:1.6}
+.bp-list li::before{flex-shrink:0;margin-top:1px}
+.bp-card.do .bp-list li::before{content:'✓';color:var(--cyan2)}
+.bp-card.dont .bp-list li::before{content:'✗';color:var(--red)}
+
+/* AUDIT SECTION */
+.audit-box{padding:20px;background:rgba(0,200,255,0.03);border:1px solid var(--border);border-radius:3px;text-align:center}
+.audit-box .a-ico{font-size:36px;margin-bottom:12px;display:block}
+.audit-box .a-title{font-family:'Orbitron',monospace;font-size:14px;color:var(--text);letter-spacing:1px;margin-bottom:8px}
+.audit-box .a-desc{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.5px;line-height:1.7;max-width:500px;margin:0 auto}
+
+footer{position:relative;z-index:1;padding:24px 40px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.finfo{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+.flinks{display:flex;gap:22px}.flinks a{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;text-decoration:none;text-transform:uppercase;transition:color .2s}.flinks a:hover{color:var(--cyan)}.flinks a.active{color:var(--cyan2);border-bottom:1px solid var(--cyan2)}
+@media(max-width:680px){header{padding:14px 18px}.page-hero{padding:50px 20px 36px}.page-content{padding:40px 18px 60px}.section{padding:22px 18px}.spec-grid{grid-template-columns:1fr 1fr}.bp-grid{grid-template-columns:1fr}.crypto-flow{flex-direction:column}.cf-arrow{transform:rotate(90deg)}}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="scanlines"></div>
+
+<header>
+  <a href="fardomax-secure-transmit.html" class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 44 44" fill="none"><polygon points="22,2 40,12 40,32 22,42 4,32 4,12" stroke="#00c8ff" stroke-width="1.5" fill="rgba(0,200,255,0.06)"/><polygon points="22,8 34,15 34,29 22,36 10,29 10,15" stroke="#00ffcc" stroke-width=".8" fill="none" opacity=".5"/><circle cx="22" cy="22" r="5" fill="#00c8ff" opacity=".9"/><line x1="22" y1="2" x2="22" y2="8" stroke="#00c8ff" stroke-width="1"/><line x1="40" y1="12" x2="34" y2="15" stroke="#00c8ff" stroke-width="1"/><line x1="40" y1="32" x2="34" y2="29" stroke="#00c8ff" stroke-width="1"/><line x1="22" y1="42" x2="22" y2="36" stroke="#00c8ff" stroke-width="1"/><line x1="4" y1="32" x2="10" y2="29" stroke="#00c8ff" stroke-width="1"/><line x1="4" y1="12" x2="10" y2="15" stroke="#00c8ff" stroke-width="1"/></svg></div>
+    <div><div class="logo-name">FARDOMAX</div><div class="logo-tagline">Secure Transmit</div></div>
+  </a>
+  <a href="fardomax-secure-transmit.html" class="nav-back">← BACK TO APP</a>
+</header>
+
+<section class="page-hero">
+  <div class="page-badge"><span class="dot"></span>SECURITY ARCHITECTURE</div>
+  <h1 class="page-title">Security <span>White Paper</span></h1>
+  <p class="page-subtitle">A complete technical breakdown of how Fardomax protects your files from end to end — the cryptography, the protocols, and the threat model.</p>
+</section>
+
+<div class="page-content">
+
+  <!-- ENCRYPTION CORE -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">01</div><span class="sec-icon">🔑</span><div class="sec-title">Encryption Core — AES-256-GCM</div></div>
+    <div class="sec-body"><p>Every byte of every file is encrypted with <strong>AES-256-GCM</strong> before it leaves your browser. This is a symmetric authenticated cipher — widely regarded as the gold standard for data encryption.</p></div>
+    <div class="spec-grid">
+      <div class="spec-card"><div class="sp-label">Algorithm</div><div class="sp-value">AES-GCM</div><div class="sp-desc">Galois/Counter Mode — provides confidentiality + authenticated integrity in one pass</div></div>
+      <div class="spec-card"><div class="sp-label">Key Length</div><div class="sp-value">256-bit</div><div class="sp-desc">2²⁵⁶ possible keys — brute force would take longer than the age of the universe</div></div>
+      <div class="spec-card"><div class="sp-label">IV Size</div><div class="sp-value">96-bit random</div><div class="sp-desc">Fresh random IV per chunk using <code>crypto.getRandomValues</code> — prevents IV reuse</div></div>
+      <div class="spec-card"><div class="sp-label">Auth Tag</div><div class="sp-value">128-bit GCM Tag</div><div class="sp-desc">Decryption fails on any bit-flip — tamper-evident by design</div></div>
+      <div class="spec-card"><div class="sp-label">Key Source</div><div class="sp-value">Web Crypto API</div><div class="sp-desc"><code>crypto.subtle.generateKey</code> — OS-level CSPRNG, never predictable</div></div>
+      <div class="spec-card"><div class="sp-label">Chunk Size</div><div class="sp-value">64 KB</div><div class="sp-desc">Each chunk independently encrypted with its own IV — streaming-friendly and secure</div></div>
+    </div>
+    <div class="sec-body"><p>GCM mode provides <strong>Authenticated Encryption with Associated Data (AEAD)</strong>. This means both confidentiality (nobody can read the data) and integrity (nobody can tamper with it without detection) are guaranteed by a single cryptographic operation.</p></div>
+  </div>
+
+  <!-- KEY MANAGEMENT -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">02</div><span class="sec-icon">🗝️</span><div class="sec-title">Key Management & Zero-Knowledge Distribution</div></div>
+    <div class="sec-body"><p>The most critical security property of Fardomax is how the encryption key is distributed — through the URL fragment, never through a server.</p></div>
+    <div class="crypto-flow">
+      <div class="cf-box"><span class="cf-ico">🧠</span><div class="cf-title">Browser CSPRNG</div><div class="cf-sub">Generates 256-bit key</div></div>
+      <div class="cf-arrow">→</div>
+      <div class="cf-box"><span class="cf-ico">🔗</span><div class="cf-title">URL Fragment</div><div class="cf-sub">Key encoded as hex in #hash</div></div>
+      <div class="cf-arrow">→</div>
+      <div class="cf-box"><span class="cf-ico">📤</span><div class="cf-title">Share URL</div><div class="cf-sub">Sent via your channel (chat, etc.)</div></div>
+      <div class="cf-arrow">→</div>
+      <div class="cf-box"><span class="cf-ico">🧠</span><div class="cf-title">Receiver Browser</div><div class="cf-sub">Imports key from #hash</div></div>
+    </div>
+    <div class="alert-box">
+      <div class="al-label">⚠ Critical Security Note</div>
+      <p>The share URL contains your encryption key. <strong>Share it only through trusted channels.</strong> Anyone with the URL can decrypt the files. Use end-to-end encrypted messaging (Signal, WhatsApp, iMessage) to share the URL — not SMS or email where possible.</p>
+    </div>
+    <div class="sec-body">
+      <p>URL fragments (the <code>#part</code>) are a browser security boundary — they are <strong>never included in HTTP requests</strong>. This is defined in RFC 3986 and enforced by every major browser. Even the PeerJS signal server that receives the rest of the URL never receives the key.</p>
+    </div>
+  </div>
+
+  <!-- TRANSPORT SECURITY -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">03</div><span class="sec-icon">🛡️</span><div class="sec-title">Transport Layer Security</div></div>
+    <div class="sec-body"><p>Beyond application-layer AES-256, all network communication uses multiple layers of transport encryption:</p>
+      <ul class="plist">
+        <li><strong>WebRTC Data Channel (DTLS 1.2+)</strong> — All WebRTC data channels are mandated by the spec (RFC 8261) to use DTLS. This means even before our AES-256 layer, the data is protected by transport-level encryption.</li>
+        <li><strong>Signal Server (TLS 1.3)</strong> — The PeerJS signaling connection uses TLS 1.3, ensuring signaling metadata (peer IDs, SDP, ICE candidates) is encrypted in transit.</li>
+        <li><strong>TURN Relay (TLS/TCP 443)</strong> — When using TURN relay, we prefer port 443/TCP which routes through TLS, bypassing firewalls and adding a second transport encryption layer on top of our AES-256.</li>
+        <li><strong>Double Encryption on TURN</strong> — If a TURN relay is used, your data is protected by both AES-256-GCM (your key, application layer) AND DTLS (transport layer). The TURN server operator sees only opaque double-encrypted ciphertext.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- THREAT MODEL -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">04</div><span class="sec-icon">🎯</span><div class="sec-title">Threat Model</div></div>
+    <div class="sec-body"><p>A rigorous security analysis requires identifying threats explicitly. Here is Fardomax's threat model:</p></div>
+    <table class="threat-table">
+      <thead><tr><th>Threat Actor</th><th>Attack Vector</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Network Eavesdropper (ISP, WiFi)</strong></td><td>Passive traffic interception</td><td><span class="tag-blocked">BLOCKED</span> — Data is AES-256+DTLS double-encrypted. Eavesdropper sees only ciphertext.</td></tr>
+        <tr><td><strong>TURN Relay Operator</strong></td><td>Inspect relayed data packets</td><td><span class="tag-blocked">BLOCKED</span> — Relay sees AES-256-GCM ciphertext only. Cannot decrypt without key in URL fragment.</td></tr>
+        <tr><td><strong>Signal Server (PeerJS)</strong></td><td>Log signaling metadata</td><td><span class="tag-mitigated">MITIGATED</span> — Can see peer IDs & connection metadata. Cannot see file data or encryption keys.</td></tr>
+        <tr><td><strong>Man-in-the-Middle</strong></td><td>Modify data in transit</td><td><span class="tag-blocked">BLOCKED</span> — AES-GCM authentication tag detects any modification. Decryption will fail.</td></tr>
+        <tr><td><strong>Fardomax Servers</strong></td><td>Server-side access to files</td><td><span class="tag-blocked">BLOCKED</span> — No file data ever reaches Fardomax infrastructure. Architecturally impossible.</td></tr>
+        <tr><td><strong>Brute Force Key Attack</strong></td><td>Guess the AES-256 key</td><td><span class="tag-blocked">BLOCKED</span> — 2²⁵⁶ keys. Infeasible with any known or projected computing power.</td></tr>
+        <tr><td><strong>URL Interception</strong></td><td>Steal the share URL before delivery</td><td><span class="tag-user">USER RESPONSIBILITY</span> — Use encrypted channels (Signal, WhatsApp) to share the URL. If URL is intercepted, files can be decrypted by attacker.</td></tr>
+        <tr><td><strong>Compromised Browser</strong></td><td>Malware reading memory/clipboard</td><td><span class="tag-user">USER RESPONSIBILITY</span> — If your device is compromised, no application-level security can protect you.</td></tr>
+        <tr><td><strong>Replay Attack</strong></td><td>Resend captured encrypted chunks</td><td><span class="tag-blocked">BLOCKED</span> — WebRTC data channels are sequenced; replayed chunks would be out of order and discarded.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- WEBRTC SECURITY -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">05</div><span class="sec-icon">🌐</span><div class="sec-title">WebRTC Security Properties</div></div>
+    <div class="sec-body">
+      <ul class="plist">
+        <li><strong>Mandatory DTLS</strong> — The WebRTC specification (W3C + IETF) requires all data channels to use DTLS encryption. Browsers cannot disable this. It is enforced at the protocol level.</li>
+        <li><strong>Certificate Fingerprinting</strong> — WebRTC uses self-signed certificates with fingerprints exchanged via the signaling channel (SDP). This prevents MITM attacks even if the signal server is compromised, as long as the SDP exchange itself is over TLS.</li>
+        <li><strong>ICE Credential Security</strong> — Each ICE session uses randomly generated username/password credentials, preventing session hijacking.</li>
+        <li><strong>No Plugin Required</strong> — Runs in the browser's native WebRTC stack — no plugins, extensions, or software installs that could be backdoored.</li>
+        <li><strong>Same-Origin Policy</strong> — The Web Crypto API operates under browser sandbox restrictions. Keys generated in one origin cannot be accessed by scripts from another origin.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- BEST PRACTICES -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">06</div><span class="sec-icon">✅</span><div class="sec-title">Security Best Practices for Users</div></div>
+    <div class="bp-grid">
+      <div class="bp-card do">
+        <div class="bp-label">✓ DO</div>
+        <ul class="bp-list">
+          <li>Share the link via Signal, WhatsApp, or iMessage</li>
+          <li>Use HTTPS when hosting this page</li>
+          <li>Verify the recipient received files before closing tab</li>
+          <li>Generate a new link for each transfer session</li>
+          <li>Use Chrome, Firefox, or Edge for best WebRTC support</li>
+          <li>Keep your browser updated for latest security patches</li>
+          <li>Transfer over trusted networks when possible</li>
+        </ul>
+      </div>
+      <div class="bp-card dont">
+        <div class="bp-label">✗ DON'T</div>
+        <ul class="bp-list">
+          <li>Share the link via unencrypted SMS</li>
+          <li>Post the share link publicly (social media, forums)</li>
+          <li>Reuse the same share link for multiple sessions</li>
+          <li>Leave sender tab open indefinitely after transfer</li>
+          <li>Transfer highly sensitive data on compromised devices</li>
+          <li>Use on outdated browsers without WebCrypto support</li>
+          <li>Share link via email on unsecured mail servers</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPEN SOURCE -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">07</div><span class="sec-icon">🔍</span><div class="sec-title">Auditability & Transparency</div></div>
+    <div class="sec-body"><p>Security through obscurity is not security. Fardomax is a single HTML file you can inspect, audit, and verify yourself.</p></div>
+    <div class="audit-box">
+      <span class="a-ico">🧾</span>
+      <div class="a-title">Inspect the Source Yourself</div>
+      <div class="a-desc">Right-click → View Page Source at any time. Every line of cryptographic code is visible. The AES-256-GCM implementation uses the browser's built-in <code>crypto.subtle</code> API — no custom cryptography, no third-party crypto libraries that could be backdoored.</div>
+    </div>
+    <div class="sec-body" style="margin-top:16px">
+      <ul class="plist">
+        <li><strong>No Minification Obfuscation</strong> — Code is readable and auditable.</li>
+        <li><strong>Standard Web APIs Only</strong> — Web Crypto, WebRTC, Blob — all well-documented W3C standards.</li>
+        <li><strong>No Telemetry</strong> — No code that "phones home" with usage data.</li>
+        <li><strong>No Dynamic Code Loading</strong> — What you see in View Source is exactly what runs. No eval(), no dynamic script injection.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="finfo">Fardomax Secure Transmit © 2025 · AES-256-GCM · DTLS · Zero-Knowledge</div>
+  <div class="flinks">
+    <a href="fardomax-privacy.html">Privacy</a>
+    <a href="fardomax-security.html" class="active">Security</a>
+    <a href="fardomax-how-it-works.html">How It Works</a>
+    <a href="fardomax-secure-transmit.html">App</a>
+  </div>
+</footer>
+<script>
+(function(){const cv=document.getElementById('bg-canvas'),ctx=cv.getContext('2d');let W,H,pts=[],strs=[];const rz=()=>{W=cv.width=innerWidth;H=cv.height=innerHeight};rz();addEventListener('resize',rz);class P{constructor(){this.reset()}reset(){this.x=Math.random()*W;this.y=Math.random()*H;this.vx=(Math.random()-.5)*.3;this.vy=(Math.random()-.5)*.3;this.r=Math.random()*1.2+.3;this.a=Math.random()*.3+.08}update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>W)this.vx*=-1;if(this.y<0||this.y>H)this.vy*=-1}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=`rgba(0,200,255,${this.a})`;ctx.fill()}}class S{constructor(){this.reset()}reset(){this.x=Math.random()*W;this.y=-20;this.sp=Math.random()*1.5+.3;this.ln=Math.random()*60+15;this.a=Math.random()*.18+.03;this.w=Math.random()*1+.2}update(){this.y+=this.sp;if(this.y-this.ln>H)this.reset()}draw(){const g=ctx.createLinearGradient(this.x,this.y,this.x,this.y-this.ln);g.addColorStop(0,`rgba(0,200,255,${this.a})`);g.addColorStop(1,'transparent');ctx.beginPath();ctx.strokeStyle=g;ctx.lineWidth=this.w;ctx.moveTo(this.x,this.y);ctx.lineTo(this.x,this.y-this.ln);ctx.stroke()}}for(let i=0;i<40;i++)pts.push(new P());for(let i=0;i<20;i++){const s=new S();s.y=Math.random()*H;strs.push(s)}(function frame(){ctx.clearRect(0,0,W,H);strs.forEach(s=>{s.update();s.draw()});pts.forEach(p=>{p.update();p.draw()});for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<120){ctx.beginPath();ctx.strokeStyle=`rgba(0,200,255,${(1-d/120)*.1})`;ctx.lineWidth=.4;ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.stroke()}};requestAnimationFrame(frame)})()})();
+</script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Fardomax Secure Transmit</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#020408;--bg2:#050d15;--panel:rgba(0,200,255,0.04);--border:rgba(0,200,255,0.18);--cyan:#00c8ff;--cyan2:#00ffcc;--red:#ff2d55;--gold:#ffd700;--text:#c8eeff;--dim:rgba(200,238,255,0.45);--glow:0 0 20px rgba(0,200,255,0.5)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;overflow-x:hidden}
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+.scanlines{position:fixed;inset:0;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none}
+
+/* HEADER */
+header{position:relative;z-index:1;padding:22px 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(0,200,255,0.07),transparent)}
+header::after{content:'';position:absolute;bottom:-1px;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:var(--glow)}
+.logo{display:flex;align-items:center;gap:14px;text-decoration:none}
+.logo-icon{width:40px;height:40px}
+.logo-icon svg{width:100%;height:100%}
+.logo-name{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;letter-spacing:3px;color:var(--cyan);text-shadow:var(--glow);line-height:1}
+.logo-tagline{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--cyan2);text-transform:uppercase;margin-top:3px}
+.nav-back{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--dim);text-decoration:none;padding:8px 16px;border:1px solid var(--border);border-radius:2px;transition:all .2s;background:var(--panel)}
+.nav-back:hover{color:var(--cyan);border-color:var(--cyan)}
+
+/* HERO */
+.page-hero{position:relative;z-index:1;text-align:center;padding:70px 40px 50px;border-bottom:1px solid var(--border)}
+.page-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 50% 0%,rgba(0,200,255,0.06),transparent);pointer-events:none}
+.page-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 18px;border:1px solid rgba(0,200,255,0.3);border-radius:2px;background:rgba(0,200,255,0.06);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--cyan2);text-transform:uppercase;margin-bottom:24px}
+.page-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan2);box-shadow:0 0 6px var(--cyan2);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.page-title{font-family:'Orbitron',monospace;font-size:clamp(28px,4vw,52px);font-weight:900;color:var(--text);letter-spacing:2px;margin-bottom:16px;line-height:1.2}
+.page-title span{color:transparent;-webkit-text-stroke:1px var(--cyan)}
+.page-subtitle{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--dim);letter-spacing:2px;line-height:1.8;max-width:600px;margin:0 auto}
+.effective-date{margin-top:20px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px}
+.effective-date span{color:var(--cyan2)}
+
+/* CONTENT */
+.page-content{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:60px 40px 80px;display:flex;flex-direction:column;gap:40px}
+
+/* SECTION */
+.section{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:32px;position:relative;overflow:hidden;animation:fadein .5s ease both}
+.section::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:var(--glow)}
+@keyframes fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.section:nth-child(2){animation-delay:.05s}
+.section:nth-child(3){animation-delay:.1s}
+.section:nth-child(4){animation-delay:.15s}
+.section:nth-child(5){animation-delay:.2s}
+.section:nth-child(6){animation-delay:.25s}
+.section:nth-child(7){animation-delay:.3s}
+.section:nth-child(8){animation-delay:.35s}
+.pc{position:absolute;width:10px;height:10px;border-color:var(--cyan);border-style:solid;opacity:.6}
+.pc.tl{top:-1px;left:-1px;border-width:2px 0 0 2px}.pc.tr{top:-1px;right:-1px;border-width:2px 2px 0 0}
+.pc.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px}.pc.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+.sec-hdr{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.sec-num{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--cyan);letter-spacing:2px;padding:4px 10px;border:1px solid rgba(0,200,255,0.3);border-radius:2px;background:rgba(0,200,255,0.08);flex-shrink:0}
+.sec-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--text);letter-spacing:1px}
+.sec-icon{font-size:22px;flex-shrink:0}
+.sec-body{font-size:13px;color:var(--dim);line-height:1.9;letter-spacing:.3px}
+.sec-body p{margin-bottom:14px}
+.sec-body p:last-child{margin-bottom:0}
+.sec-body strong{color:var(--text);font-weight:600}
+.sec-body a{color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(0,200,255,0.3);transition:border-color .2s}
+.sec-body a:hover{border-color:var(--cyan)}
+
+/* HIGHLIGHT BOX */
+.hi-box{margin:18px 0;padding:16px 18px;background:rgba(0,255,200,0.05);border:1px solid rgba(0,255,200,0.2);border-radius:3px}
+.hi-box .hi-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--cyan2);text-transform:uppercase;margin-bottom:8px}
+.hi-box p{font-size:12px;color:var(--dim);line-height:1.8;letter-spacing:.3px}
+.hi-box p strong{color:var(--cyan2)}
+
+/* DATA TABLE */
+.data-table{width:100%;border-collapse:collapse;margin:18px 0;font-size:12px}
+.data-table th{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan2);text-transform:uppercase;padding:10px 14px;border-bottom:1px solid var(--border);text-align:left;background:rgba(0,200,255,0.04)}
+.data-table td{padding:10px 14px;border-bottom:1px solid rgba(0,200,255,0.08);color:var(--dim);line-height:1.6;vertical-align:top}
+.data-table td strong{color:var(--text)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .tag-none{display:inline-block;padding:2px 8px;background:rgba(0,255,200,0.1);border:1px solid rgba(0,255,200,0.25);border-radius:2px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--cyan2);letter-spacing:1px}
+.data-table .tag-temp{display:inline-block;padding:2px 8px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);border-radius:2px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:1px}
+
+/* BULLET LIST */
+.plist{list-style:none;padding:0;margin:12px 0;display:flex;flex-direction:column;gap:8px}
+.plist li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--dim);line-height:1.7;letter-spacing:.3px}
+.plist li::before{content:'◈';color:var(--cyan);font-size:10px;flex-shrink:0;margin-top:3px}
+.plist li strong{color:var(--text)}
+
+/* ZERO CLAIM CARDS */
+.zero-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:18px 0}
+.zero-card{padding:16px;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.15);border-radius:3px;text-align:center}
+.zero-card .z-ico{font-size:28px;margin-bottom:8px;display:block}
+.zero-card .z-title{font-family:'Orbitron',monospace;font-size:11px;color:var(--cyan);letter-spacing:1px;margin-bottom:6px}
+.zero-card .z-desc{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.5px;line-height:1.6}
+
+/* CONTACT */
+.contact-box{padding:20px;background:rgba(0,200,255,0.04);border:1px solid var(--border);border-radius:3px;display:flex;align-items:center;gap:16px;margin-top:14px}
+.contact-box .c-ico{font-size:28px;flex-shrink:0}
+.contact-box .c-text{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.5px;line-height:1.7}
+.contact-box .c-text strong{color:var(--cyan2)}
+
+/* FOOTER */
+footer{position:relative;z-index:1;padding:24px 40px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.finfo{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+.flinks{display:flex;gap:22px}
+.flinks a{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;text-decoration:none;text-transform:uppercase;transition:color .2s}
+.flinks a:hover{color:var(--cyan)}
+.flinks a.active{color:var(--cyan2);border-bottom:1px solid var(--cyan2)}
+
+@media(max-width:680px){header{padding:14px 18px}.page-hero{padding:50px 20px 36px}.page-content{padding:40px 18px 60px}.section{padding:22px 18px}.zero-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="scanlines"></div>
+
+<header>
+  <a href="fardomax-secure-transmit.html" class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 44 44" fill="none"><polygon points="22,2 40,12 40,32 22,42 4,32 4,12" stroke="#00c8ff" stroke-width="1.5" fill="rgba(0,200,255,0.06)"/><polygon points="22,8 34,15 34,29 22,36 10,29 10,15" stroke="#00ffcc" stroke-width=".8" fill="none" opacity=".5"/><circle cx="22" cy="22" r="5" fill="#00c8ff" opacity=".9"/><line x1="22" y1="2" x2="22" y2="8" stroke="#00c8ff" stroke-width="1"/><line x1="40" y1="12" x2="34" y2="15" stroke="#00c8ff" stroke-width="1"/><line x1="40" y1="32" x2="34" y2="29" stroke="#00c8ff" stroke-width="1"/><line x1="22" y1="42" x2="22" y2="36" stroke="#00c8ff" stroke-width="1"/><line x1="4" y1="32" x2="10" y2="29" stroke="#00c8ff" stroke-width="1"/><line x1="4" y1="12" x2="10" y2="15" stroke="#00c8ff" stroke-width="1"/></svg>
+    </div>
+    <div><div class="logo-name">FARDOMAX</div><div class="logo-tagline">Secure Transmit</div></div>
+  </a>
+  <a href="fardomax-secure-transmit.html" class="nav-back">← BACK TO APP</a>
+</header>
+
+<section class="page-hero">
+  <div class="page-badge"><span class="dot"></span>LEGAL DOCUMENT</div>
+  <h1 class="page-title">Privacy <span>Policy</span></h1>
+  <p class="page-subtitle">We built Fardomax on a single principle: your files are none of our business. This policy explains exactly what we collect, what we don't, and why.</p>
+  <div class="effective-date">Effective Date: <span>January 1, 2025</span> &nbsp;·&nbsp; Last Updated: <span>January 1, 2025</span></div>
+</section>
+
+<div class="page-content">
+
+  <!-- ZERO DATA -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">01</div><span class="sec-icon">🚫</span><div class="sec-title">The Zero-Data Principle</div></div>
+    <div class="zero-grid">
+      <div class="zero-card"><span class="z-ico">📁</span><div class="z-title">Zero File Storage</div><div class="z-desc">No file ever touches our servers. Files go peer-to-peer only.</div></div>
+      <div class="zero-card"><span class="z-ico">🔑</span><div class="z-title">Zero Key Storage</div><div class="z-desc">Encryption keys exist only in your URL. We never see them.</div></div>
+      <div class="zero-card"><span class="z-ico">👤</span><div class="z-title">Zero Accounts</div><div class="z-desc">No registration. No login. No identity required.</div></div>
+      <div class="zero-card"><span class="z-ico">📊</span><div class="z-title">Zero Analytics</div><div class="z-desc">No tracking pixels, no analytics SDKs, no behavioral data.</div></div>
+      <div class="zero-card"><span class="z-ico">🍪</span><div class="z-title">Zero Cookies</div><div class="z-desc">No cookies set. No session tracking. No persistent identifiers.</div></div>
+      <div class="zero-card"><span class="z-ico">📢</span><div class="z-title">Zero Ads</div><div class="z-desc">No advertising networks. No data sold to third parties. Ever.</div></div>
+    </div>
+    <div class="sec-body"><p>Fardomax is architected from the ground up so that we are <strong>technically incapable</strong> of accessing your files. This is not a policy promise — it is a cryptographic and architectural reality. The AES-256-GCM encryption key is embedded in the URL fragment (#), which is never sent to any server by your browser.</p></div>
+  </div>
+
+  <!-- WHAT WE COLLECT -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">02</div><span class="sec-icon">🗄️</span><div class="sec-title">What Data We Process</div></div>
+    <div class="sec-body"><p>Fardomax processes the absolute minimum required to establish peer connections. Here is a complete breakdown:</p></div>
+    <table class="data-table">
+      <thead><tr><th>Data Type</th><th>Purpose</th><th>Stored?</th><th>Retention</th></tr></thead>
+      <tbody>
+        <tr><td><strong>WebRTC Signaling Data</strong><br>Temporary peer IDs, ICE candidates, SDP offers</td><td>Establishing the P2P connection between sender and receiver</td><td><span class="tag-temp">TRANSIT ONLY</span></td><td>Seconds — deleted once connection is established</td></tr>
+        <tr><td><strong>IP Address (TURN relay)</strong><br>Your IP when relaying via TURN servers</td><td>Routing encrypted data when direct P2P fails</td><td><span class="tag-temp">TRANSIT ONLY</span></td><td>Not logged. Exists only in active relay session</td></tr>
+        <tr><td><strong>File Metadata</strong><br>Filename, file size (sent in-channel)</td><td>Shown to receiver so they know what to expect</td><td><span class="tag-none">NEVER STORED</span></td><td>Lives only in the encrypted P2P channel</td></tr>
+        <tr><td><strong>File Contents</strong><br>Your actual files</td><td>N/A — never processed by us</td><td><span class="tag-none">NEVER STORED</span></td><td>Never reaches our infrastructure</td></tr>
+        <tr><td><strong>Encryption Keys</strong></td><td>N/A — never transmitted to us</td><td><span class="tag-none">NEVER STORED</span></td><td>Exists only in the URL fragment on your device</td></tr>
+      </tbody>
+    </table>
+    <div class="hi-box">
+      <div class="hi-label">🔒 Technical Note</div>
+      <p>URL fragments (the part after <strong>#</strong>) are never sent to web servers by your browser. This is a fundamental browser security feature. Your AES-256 key, embedded in the <strong>#fragment</strong> of the share URL, is therefore cryptographically guaranteed to never leave your devices.</p>
+    </div>
+  </div>
+
+  <!-- PEER TECHNOLOGY -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">03</div><span class="sec-icon">🌐</span><div class="sec-title">Third-Party Infrastructure</div></div>
+    <div class="sec-body">
+      <p>Fardomax uses the following third-party services solely for connection establishment. These services <strong>never see your files or encryption keys</strong>:</p>
+      <ul class="plist">
+        <li><strong>PeerJS Signal Server (0.peerjs.com)</strong> — A free, open-source WebRTC signaling server. It receives temporary peer IDs and connection metadata (SDP/ICE) for the duration of connection setup only. No files, no keys, no content ever passes through it.</li>
+        <li><strong>Open Relay Project (openrelay.metered.ca)</strong> — Free TURN relay servers used when direct P2P connection cannot be established (e.g., strict NAT or corporate firewalls). All data relayed is AES-256-GCM encrypted — the relay operator sees only opaque ciphertext.</li>
+        <li><strong>Metered.ca TURN Servers</strong> — Secondary TURN relay fallback. Same guarantees as above — all relayed traffic is end-to-end encrypted before it reaches the relay.</li>
+        <li><strong>Google STUN Servers (stun.l.google.com)</strong> — Used only to discover your public IP/port for P2P hole-punching. No data is sent through STUN servers.</li>
+        <li><strong>Google Fonts (fonts.googleapis.com)</strong> — Loads the Orbitron, Share Tech Mono, and Exo 2 fonts. Google may log the request per their own privacy policy. No user-specific data is passed.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ENCRYPTION -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">04</div><span class="sec-icon">🔐</span><div class="sec-title">Encryption & Security Architecture</div></div>
+    <div class="sec-body">
+      <p>Every file transferred through Fardomax is encrypted using <strong>AES-256-GCM</strong> (Advanced Encryption Standard, 256-bit key, Galois/Counter Mode) — the same encryption standard used by governments and militaries worldwide.</p>
+      <ul class="plist">
+        <li><strong>Key Generation</strong> — A unique 256-bit key is generated in your browser using the Web Crypto API (<code>crypto.subtle.generateKey</code>) for every transfer session. The key never leaves your browser except via the share URL.</li>
+        <li><strong>Authenticated Encryption</strong> — AES-GCM provides both confidentiality and integrity. Any tampering with encrypted data in transit will cause decryption to fail, protecting against man-in-the-middle attacks.</li>
+        <li><strong>Per-Chunk IV</strong> — Each 64 KB chunk is encrypted with a fresh random 96-bit initialization vector, preventing patterns from emerging even in identical data.</li>
+        <li><strong>Transport Security</strong> — All signaling traffic uses TLS 1.3. WebRTC data channels use DTLS-SRTP by specification.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- YOUR RIGHTS -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">05</div><span class="sec-icon">⚖️</span><div class="sec-title">Your Rights</div></div>
+    <div class="sec-body">
+      <p>Because we collect no personal data, most data rights (access, deletion, portability) are automatically satisfied — there is nothing to access, delete, or port. However, your rights under applicable law include:</p>
+      <ul class="plist">
+        <li><strong>Right to be Forgotten</strong> — There is nothing stored to forget. Closing the transfer session terminates all connection data.</li>
+        <li><strong>Right to Data Portability</strong> — Your files never leave your control. They exist on your device and the recipient's device only.</li>
+        <li><strong>Right to Transparency</strong> — This policy and our source code are the full transparency record.</li>
+        <li><strong>GDPR / CCPA Compliance</strong> — Our zero-data architecture means we do not fall under data controller obligations as we process no personal data at rest.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CHILDREN -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">06</div><span class="sec-icon">👶</span><div class="sec-title">Children's Privacy</div></div>
+    <div class="sec-body">
+      <p>Fardomax does not knowingly collect any information from children under 13 (or under 16 in the EU). As we collect no personal information from any user, this protection is universal. Parents who believe their child has transmitted sensitive information via our service should note that <strong>we have no way to access or retain that information</strong> — it was transferred directly between devices.</p>
+    </div>
+  </div>
+
+  <!-- CHANGES -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">07</div><span class="sec-icon">📋</span><div class="sec-title">Policy Changes</div></div>
+    <div class="sec-body">
+      <p>If we update this Privacy Policy, we will update the "Last Updated" date at the top of this page. Since Fardomax is a client-side application, there is no email notification system — please review this page periodically if you use the service regularly.</p>
+      <p>Any future changes will <strong>never reduce your privacy protections</strong>. Our commitment to zero server-side file storage is a permanent architectural guarantee, not a reversible policy.</p>
+    </div>
+  </div>
+
+  <!-- CONTACT -->
+  <div class="section">
+    <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+    <div class="sec-hdr"><div class="sec-num">08</div><span class="sec-icon">📬</span><div class="sec-title">Contact</div></div>
+    <div class="sec-body"><p>Questions about this Privacy Policy or Fardomax's data practices? We're committed to transparency.</p></div>
+    <div class="contact-box">
+      <div class="c-ico">🛡️</div>
+      <div class="c-text">Privacy inquiries: <strong>privacy@fardomax.io</strong><br>General: <strong>hello@fardomax.io</strong><br>Response time: typically within 48 hours</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="finfo">Fardomax Secure Transmit © 2025 · Zero Data · AES-256-GCM</div>
+  <div class="flinks">
+    <a href="fardomax-privacy.html" class="active">Privacy</a>
+    <a href="fardomax-security.html">Security</a>
+    <a href="fardomax-how-it-works.html">How It Works</a>
+    <a href="fardomax-secure-transmit.html">App</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const cv=document.getElementById('bg-canvas'),ctx=cv.getContext('2d');
+  let W,H,pts=[],strs=[];
+  const rz=()=>{W=cv.width=innerWidth;H=cv.height=innerHeight};rz();addEventListener('resize',rz);
+  class P{constructor(){this.reset()}reset(){this.x=Math.random()*W;this.y=Math.random()*H;this.vx=(Math.random()-.5)*.3;this.vy=(Math.random()-.5)*.3;this.r=Math.random()*1.2+.3;this.a=Math.random()*.3+.08}update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>W)this.vx*=-1;if(this.y<0||this.y>H)this.vy*=-1}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=`rgba(0,200,255,${this.a})`;ctx.fill()}}
+  class S{constructor(){this.reset()}reset(){this.x=Math.random()*W;this.y=-20;this.sp=Math.random()*1.5+.3;this.ln=Math.random()*60+15;this.a=Math.random()*.18+.03;this.w=Math.random()*1+.2}update(){this.y+=this.sp;if(this.y-this.ln>H)this.reset()}draw(){const g=ctx.createLinearGradient(this.x,this.y,this.x,this.y-this.ln);g.addColorStop(0,`rgba(0,200,255,${this.a})`);g.addColorStop(1,'transparent');ctx.beginPath();ctx.strokeStyle=g;ctx.lineWidth=this.w;ctx.moveTo(this.x,this.y);ctx.lineTo(this.x,this.y-this.ln);ctx.stroke()}}
+  for(let i=0;i<40;i++)pts.push(new P());
+  for(let i=0;i<20;i++){const s=new S();s.y=Math.random()*H;strs.push(s)}
+  (function frame(){ctx.clearRect(0,0,W,H);strs.forEach(s=>{s.update();s.draw()});pts.forEach(p=>{p.update();p.draw()});for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<120){ctx.beginPath();ctx.strokeStyle=`rgba(0,200,255,${(1-d/120)*.1})`;ctx.lineWidth=.4;ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.stroke()}};requestAnimationFrame(frame)})();
+})();
+</script>
+</body>
+</html>
