@@ -89,7 +89,7 @@
           <h2 class="text-2xl font-mono text-cyan-100 mb-3 font-bold tracking-wider text-center group-hover:text-cyan-400 transition-colors">
             INITIALIZE DATA TARGET
           </h2>
-          <p id="auth-status-text" class="text-cyan-600/80 font-mono text-sm text-center mb-8">
+          <p id="auth-status-text" class="text-cyan-600/80 font-mono text-sm text-center mb-8 leading-relaxed">
             ESTABLISHING SECURE NODE...
           </p>
           
@@ -252,53 +252,7 @@
     // --- INITIALIZE ICONS ---
     lucide.createIcons();
 
-    // --- FIREBASE CONFIGURATION ---
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-    // --- WEBRTC CONFIGURATION ---
-    const rtcConfig = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
-      ]
-    };
-
-    // --- GLOBAL APP STATE ---
-    let currentUser = null;
-    let currentMode = 'idle'; // 'idle', 'sender', 'receiver'
-    let currentFile = null;
-    let currentShareUrl = '';
-    let currentRoomId = '';
-    let receivedFileMeta = null;
-    let downloadBlobUrl = '';
-    let peerConnection = null;
-    let dataChannel = null;
-    let unsubRoom = null;
-    let initializedUrlCheck = false;
-    let processedCandidates = new Set();
-    let candidateQueue = [];
-    
-    // Speed tracking
-    let lastTick = Date.now();
-    let bytesSinceTick = 0;
-    
-    // Toast timer
-    let toastTimer = null;
-
-    // --- DOM ELEMENTS ---
-    const views = {
-      idle: document.getElementById('view-idle'),
-      connecting: document.getElementById('view-connecting'),
-      transferring: document.getElementById('view-transferring'),
-      completed: document.getElementById('view-completed'),
-      error: document.getElementById('view-error')
-    };
-
+    // --- DOM ELEMENTS (needed early for error catching) ---
     const elements = {
       uploadBox: document.getElementById('upload-box'),
       fileUpload: document.getElementById('fileUpload'),
@@ -326,6 +280,80 @@
       loaderText: document.getElementById('loader-text'),
       logoBtn: document.getElementById('logo-btn')
     };
+
+    const views = {
+      idle: document.getElementById('view-idle'),
+      connecting: document.getElementById('view-connecting'),
+      transferring: document.getElementById('view-transferring'),
+      completed: document.getElementById('view-completed'),
+      error: document.getElementById('view-error')
+    };
+
+    // =========================================================
+    // 🛑 STOP! PASTE YOUR FIREBASE CONFIGURATION HERE:
+    // =========================================================
+    // If you run this file directly on your computer (file://) or host it yourself,
+    // you MUST replace these empty strings with your actual Firebase Project keys.
+    const myFirebaseConfig = {
+      apiKey: "",
+      authDomain: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: ""
+    };
+
+    // Determine environment (Sandbox vs Local/Hosted)
+    const isSandbox = typeof __firebase_config !== 'undefined';
+    const finalConfig = isSandbox ? JSON.parse(__firebase_config) : myFirebaseConfig;
+
+    let app, auth, db, appId;
+
+    try {
+      // Validate configuration existence
+      if (!isSandbox && !finalConfig.apiKey) {
+        elements.authStatusText.innerHTML = "<span class='text-red-500 font-bold'>⚠️ FIREBASE CONFIG MISSING!</span><br/><span class='text-xs text-red-400 mt-2 block'>Open index.html in a text editor and paste your Firebase keys around Line 190.</span>";
+        elements.joinInput.placeholder = "SETUP REQUIRED";
+        throw new Error("Missing Firebase keys. Cannot initialize database.");
+      }
+
+      // Initialize Firebase normally if keys exist
+      app = initializeApp(finalConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    } catch (err) {
+      console.error(err);
+      // We deliberately stop script execution here so it doesn't try to access undefined db
+    }
+
+    // --- WEBRTC CONFIGURATION ---
+    const rtcConfig = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
+      ]
+    };
+
+    // --- GLOBAL APP STATE ---
+    let currentUser = null;
+    let currentMode = 'idle'; // 'idle', 'sender', 'receiver'
+    let currentFile = null;
+    let currentShareUrl = '';
+    let currentRoomId = '';
+    let receivedFileMeta = null;
+    let downloadBlobUrl = '';
+    let peerConnection = null;
+    let dataChannel = null;
+    let unsubRoom = null;
+    let initializedUrlCheck = false;
+    let processedCandidates = new Set();
+    let candidateQueue = [];
+    
+    let lastTick = Date.now();
+    let bytesSinceTick = 0;
+    let toastTimer = null;
 
     // --- UI HELPERS ---
     const switchView = (viewName) => {
@@ -416,43 +444,45 @@
       e.target.value = e.target.value.toUpperCase();
     });
 
-    // --- AUTHENTICATION INIT ---
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
+    // --- AUTHENTICATION INIT (Only runs if DB is valid) ---
+    if (app && auth && db) {
+      const initAuth = async () => {
+        try {
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+        } catch (error) {
+          console.error("Auth error:", error);
+          showError("Failed to authenticate with Fardomax Network.");
         }
-      } catch (error) {
-        console.error("Auth error:", error);
-        showError("Failed to authenticate with Fardomax Network.");
-      }
-    };
-    initAuth();
+      };
+      initAuth();
 
-    onAuthStateChanged(auth, (user) => {
-      currentUser = user;
-      if (user) {
-        // Unlock Idle UI
-        views.idle.classList.remove('opacity-50', 'pointer-events-none', 'grayscale');
-        elements.authStatusText.innerText = "CLICK TO SELECT PAYLOAD FOR TRANSMISSION";
-        elements.joinInput.disabled = false;
-        elements.joinInput.placeholder = "ENTER PASSKEY TO RECEIVE";
-        elements.btnIntercept.disabled = false;
-        elements.btnIntercept.classList.remove('opacity-50', 'cursor-not-allowed');
+      onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        if (user) {
+          // Unlock Idle UI
+          views.idle.classList.remove('opacity-50', 'pointer-events-none', 'grayscale');
+          elements.authStatusText.innerText = "CLICK TO SELECT PAYLOAD FOR TRANSMISSION";
+          elements.joinInput.disabled = false;
+          elements.joinInput.placeholder = "ENTER PASSKEY TO RECEIVE";
+          elements.btnIntercept.disabled = false;
+          elements.btnIntercept.classList.remove('opacity-50', 'cursor-not-allowed');
 
-        // Check for URL room parameter once
-        if (!initializedUrlCheck) {
-          initializedUrlCheck = true;
-          const urlParams = new URLSearchParams(window.location.search);
-          const roomParam = urlParams.get('room');
-          if (roomParam) {
-            joinRoom(roomParam);
+          // Check for URL room parameter once
+          if (!initializedUrlCheck) {
+            initializedUrlCheck = true;
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            if (roomParam) {
+              joinRoom(roomParam);
+            }
           }
         }
-      }
-    });
+      });
+    }
 
     // --- WEBRTC LOGIC ---
 
@@ -630,7 +660,10 @@
       currentShareUrl = url.toString();
       elements.displayUrl.value = currentShareUrl;
 
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'fardomax_rooms', currentRoomId);
+      // Ensure we query the right DB path based on our environment
+      const roomRef = isSandbox 
+        ? doc(db, 'artifacts', appId, 'public', 'data', 'fardomax_rooms', currentRoomId)
+        : doc(db, 'fardomax_rooms', currentRoomId);
       
       try {
         await setDoc(roomRef, {
@@ -700,7 +733,7 @@
       }, (err) => {
         console.error(err);
         const msg = err.code === 'permission-denied' 
-          ? "ACCESS DENIED: Shared links are read-only. Remix or Duplicate this workspace to unlock transmissions." 
+          ? "ACCESS DENIED: Database requires permissions configuration." 
           : `SYNC ERROR: ${err.message}`;
         showError(msg);
       });
@@ -727,7 +760,9 @@
       dataChannel = channel;
       setupDataChannel(channel, null);
 
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'fardomax_rooms', cleanId);
+      const roomRef = isSandbox 
+        ? doc(db, 'artifacts', appId, 'public', 'data', 'fardomax_rooms', cleanId)
+        : doc(db, 'fardomax_rooms', cleanId);
 
       peerConnection.onicecandidate = async (event) => {
         if (event.candidate) {
@@ -775,7 +810,7 @@
       }, (err) => {
         console.error(err);
         const msg = err.code === 'permission-denied' 
-          ? "ACCESS DENIED: Shared links are read-only. Remix or Duplicate this workspace to unlock transmissions." 
+          ? "ACCESS DENIED: Database requires permissions configuration." 
           : `SYNC ERROR: ${err.message}`;
         showError(msg);
       });
