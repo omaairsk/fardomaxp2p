@@ -4,1542 +4,522 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fardomax Secure Transmit</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
-:root {
-  --bg: #020408;
-  --bg2: #050d15;
-  --panel: rgba(0,200,255,0.04);
-  --border: rgba(0,200,255,0.18);
-  --cyan: #00c8ff;
-  --cyan2: #00ffcc;
-  --red: #ff2d55;
-  --gold: #ffd700;
-  --text: #c8eeff;
-  --dim: rgba(200,238,255,0.45);
-  --glow: 0 0 20px rgba(0,200,255,0.5);
-  --glow2: 0 0 40px rgba(0,200,255,0.3);
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body {
-  width: 100%; height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Exo 2', sans-serif;
-  overflow-x: hidden;
-}
-
-/* ── CANVAS BG ── */
-#bg-canvas {
-  position: fixed; inset: 0; z-index: 0;
-  pointer-events: none;
-}
-
-/* ── LOADING SCREEN ── */
-#loader {
-  position: fixed; inset: 0; z-index: 1000;
-  background: #020408;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  transition: opacity 0.8s ease, visibility 0.8s;
-}
-#loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
-.loader-hex {
-  position: relative; width: 120px; height: 120px; margin-bottom: 40px;
-}
-.loader-hex svg {
-  width: 100%; height: 100%;
-  animation: hex-spin 3s linear infinite;
-}
-@keyframes hex-spin {
-  0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(180deg) scale(1.1); }
-  100% { transform: rotate(360deg) scale(1); }
-}
-.loader-hex svg .ring1 { animation: ring-pulse 1.5s ease-in-out infinite; }
-.loader-hex svg .ring2 { animation: ring-pulse 1.5s ease-in-out infinite 0.3s; }
-.loader-hex svg .ring3 { animation: ring-pulse 1.5s ease-in-out infinite 0.6s; }
-@keyframes ring-pulse {
-  0%, 100% { opacity: 1; stroke-width: 1.5; }
-  50% { opacity: 0.3; stroke-width: 0.5; }
-}
-
-.loader-title {
-  font-family: 'Orbitron', monospace;
-  font-size: 28px; font-weight: 900;
-  letter-spacing: 4px;
-  color: var(--cyan);
-  text-shadow: var(--glow);
-  margin-bottom: 8px;
-  animation: title-flicker 4s infinite;
-}
-@keyframes title-flicker {
-  0%,94%,96%,100% { opacity: 1; }
-  95% { opacity: 0.6; }
-}
-.loader-sub {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; letter-spacing: 6px;
-  color: var(--cyan2);
-  text-transform: uppercase; margin-bottom: 48px;
-}
-
-.loader-bar-wrap {
-  width: 320px; height: 2px;
-  background: rgba(0,200,255,0.1);
-  border-radius: 2px; overflow: hidden;
-  position: relative; margin-bottom: 16px;
-}
-.loader-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--cyan2), var(--cyan), var(--cyan2));
-  border-radius: 2px;
-  width: 0%;
-  transition: width 0.1s linear;
-  box-shadow: 0 0 12px var(--cyan);
-}
-
-.loader-status {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: var(--dim);
-  letter-spacing: 2px; min-height: 16px;
-}
-
-.loader-grid {
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(rgba(0,200,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,200,255,0.04) 1px, transparent 1px);
-  background-size: 60px 60px;
-  pointer-events: none;
-}
-.loader-scanline {
-  position: absolute; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(transparent, rgba(0,200,255,0.15), transparent);
-  animation: scan 3s linear infinite;
-  pointer-events: none;
-}
-@keyframes scan {
-  0% { top: -3px; }
-  100% { top: 100%; }
-}
-
-/* ── MAIN APP ── */
-#app {
-  position: relative; z-index: 1;
-  min-height: 100vh;
-  display: flex; flex-direction: column;
-  opacity: 0; transition: opacity 1s ease;
-}
-#app.visible { opacity: 1; }
-
-/* ── HEADER ── */
-header {
-  padding: 24px 40px;
-  display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(0,200,255,0.06) 0%, transparent 100%);
-  position: relative;
-}
-header::after {
-  content: '';
-  position: absolute; bottom: -1px; left: 10%; right: 10%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-  box-shadow: var(--glow);
-}
-
-.logo {
-  display: flex; align-items: center; gap: 14px;
-}
-.logo-icon {
-  width: 44px; height: 44px;
-  position: relative;
-}
-.logo-icon svg { width: 100%; height: 100%; }
-
-.logo-text {
-  display: flex; flex-direction: column;
-}
-.logo-name {
-  font-family: 'Orbitron', monospace;
-  font-size: 20px; font-weight: 900;
-  letter-spacing: 3px;
-  color: var(--cyan);
-  text-shadow: var(--glow);
-  line-height: 1;
-}
-.logo-tagline {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; letter-spacing: 4px;
-  color: var(--cyan2); text-transform: uppercase;
-  margin-top: 3px;
-}
-
-.header-stats {
-  display: flex; gap: 32px; align-items: center;
-}
-.stat-item {
-  display: flex; flex-direction: column; align-items: flex-end;
-  gap: 2px;
-}
-.stat-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; color: var(--dim);
-  letter-spacing: 2px; text-transform: uppercase;
-}
-.stat-val {
-  font-family: 'Orbitron', monospace;
-  font-size: 13px; font-weight: 600;
-  color: var(--cyan2);
-}
-
-.security-badge {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid rgba(0,255,200,0.3);
-  border-radius: 2px;
-  background: rgba(0,255,200,0.05);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; letter-spacing: 2px;
-  color: var(--cyan2);
-}
-.security-badge .dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--cyan2);
-  box-shadow: 0 0 8px var(--cyan2);
-  animation: blink 2s ease-in-out infinite;
-}
-@keyframes blink {
-  0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
-}
-
-/* ── MAIN CONTENT ── */
-main {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-start;
-  padding: 60px 40px;
-  gap: 48px;
-}
-
-.hero-text {
-  text-align: center; max-width: 700px;
-}
-.hero-title {
-  font-family: 'Orbitron', monospace;
-  font-size: clamp(28px, 4vw, 48px);
-  font-weight: 900;
-  line-height: 1.15;
-  margin-bottom: 16px;
-}
-.hero-title .line1 { color: var(--text); display: block; }
-.hero-title .line2 {
-  color: transparent;
-  -webkit-text-stroke: 1px var(--cyan);
-  display: block;
-  text-shadow: none;
-  letter-spacing: 2px;
-}
-.hero-desc {
-  font-size: 14px; color: var(--dim);
-  letter-spacing: 1px; line-height: 1.8;
-  font-weight: 300;
-}
-
-.features-strip {
-  display: flex; gap: 24px; flex-wrap: wrap; justify-content: center;
-}
-.feature-tag {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 16px;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  background: var(--panel);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; letter-spacing: 2px;
-  color: var(--dim); text-transform: uppercase;
-}
-.feature-tag .icon { font-size: 14px; }
-
-/* ── TRANSFER PANELS ── */
-.transfer-container {
-  display: grid; grid-template-columns: 1fr 80px 1fr;
-  gap: 0; align-items: start;
-  width: 100%; max-width: 960px;
-}
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 32px;
-  position: relative;
-  overflow: hidden;
-}
-.panel::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-  box-shadow: var(--glow);
-}
-.panel-corner {
-  position: absolute;
-  width: 12px; height: 12px;
-  border-color: var(--cyan);
-  border-style: solid;
-  opacity: 0.7;
-}
-.panel-corner.tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
-.panel-corner.tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
-.panel-corner.bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
-.panel-corner.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
-
-.panel-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; letter-spacing: 4px;
-  color: var(--dim); text-transform: uppercase;
-  margin-bottom: 20px;
-  display: flex; align-items: center; gap: 10px;
-}
-.panel-label::after {
-  content: ''; flex: 1; height: 1px;
-  background: var(--border);
-}
-.panel-title {
-  font-family: 'Orbitron', monospace;
-  font-size: 18px; font-weight: 700;
-  color: var(--text); margin-bottom: 24px;
-  letter-spacing: 1px;
-}
-
-/* ── DROP ZONE ── */
-.drop-zone {
-  border: 1px dashed var(--border);
-  border-radius: 4px;
-  padding: 48px 24px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative; overflow: hidden;
-  background: rgba(0,200,255,0.02);
-}
-.drop-zone:hover, .drop-zone.drag-over {
-  border-color: var(--cyan);
-  background: rgba(0,200,255,0.07);
-  box-shadow: inset 0 0 30px rgba(0,200,255,0.08);
-}
-.drop-zone .dz-icon {
-  font-size: 48px; margin-bottom: 16px;
-  display: block; opacity: 0.7;
-  animation: float 3s ease-in-out infinite;
-}
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-.drop-zone .dz-title {
-  font-family: 'Orbitron', monospace;
-  font-size: 14px; color: var(--text);
-  margin-bottom: 8px; letter-spacing: 1px;
-}
-.drop-zone .dz-sub {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: var(--dim); letter-spacing: 1px;
-}
-.drop-zone .dz-unlimited {
-  margin-top: 12px;
-  display: inline-block;
-  padding: 4px 12px;
-  border: 1px solid rgba(0,255,200,0.3);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--cyan2);
-  letter-spacing: 2px;
-}
-#file-input { display: none; }
-
-/* ── FILE LIST ── */
-.file-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
-.file-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px;
-  background: rgba(0,200,255,0.06);
-  border: 1px solid rgba(0,200,255,0.12);
-  border-radius: 3px;
-  animation: slide-in 0.3s ease;
-}
-@keyframes slide-in {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-.file-item .fi-icon { font-size: 20px; flex-shrink: 0; }
-.file-item .fi-info { flex: 1; min-width: 0; }
-.file-item .fi-name {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.file-item .fi-size {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--dim); margin-top: 2px;
-}
-.file-item .fi-remove {
-  background: none; border: none;
-  color: var(--red); cursor: pointer;
-  font-size: 16px; padding: 2px 6px;
-  transition: opacity 0.2s;
-  flex-shrink: 0;
-}
-.file-item .fi-remove:hover { opacity: 0.7; }
-
-/* ── BUTTONS ── */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 10px; padding: 14px 28px;
-  font-family: 'Orbitron', monospace;
-  font-size: 12px; font-weight: 700;
-  letter-spacing: 2px; text-transform: uppercase;
-  border: none; border-radius: 2px;
-  cursor: pointer; transition: all 0.3s ease;
-  position: relative; overflow: hidden;
-  width: 100%; margin-top: 20px;
-}
-.btn::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
-  transform: translateX(-100%);
-  transition: transform 0.5s ease;
-}
-.btn:hover::before { transform: translateX(100%); }
-
-.btn-primary {
-  background: linear-gradient(135deg, #003850, #005878);
-  color: var(--cyan);
-  border: 1px solid var(--cyan);
-  box-shadow: 0 0 20px rgba(0,200,255,0.2), inset 0 1px 0 rgba(0,200,255,0.1);
-}
-.btn-primary:hover {
-  background: linear-gradient(135deg, #004d6e, #006e96);
-  box-shadow: 0 0 30px rgba(0,200,255,0.4), inset 0 1px 0 rgba(0,200,255,0.2);
-  transform: translateY(-1px);
-}
-.btn-primary:disabled {
-  opacity: 0.4; cursor: not-allowed; transform: none;
-}
-
-.btn-success {
-  background: linear-gradient(135deg, #003828, #005040);
-  color: var(--cyan2);
-  border: 1px solid var(--cyan2);
-  box-shadow: 0 0 20px rgba(0,255,200,0.2);
-}
-.btn-success:hover {
-  box-shadow: 0 0 30px rgba(0,255,200,0.4);
-  transform: translateY(-1px);
-}
-
-/* ── DIVIDER ── */
-.panel-divider {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 48px 0;
-  gap: 12px;
-}
-.divider-line {
-  width: 1px; flex: 1;
-  background: linear-gradient(180deg, transparent, var(--border), transparent);
-}
-.divider-icon {
-  width: 48px; height: 48px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Orbitron', monospace;
-  font-size: 14px; color: var(--dim);
-  background: var(--bg2);
-}
-
-/* ── URL BOX ── */
-.url-box {
-  margin-top: 20px;
-  padding: 16px;
-  background: rgba(0,200,255,0.03);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  display: none;
-}
-.url-box.visible { display: block; animation: fade-in 0.5s ease; }
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.url-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; color: var(--cyan2);
-  letter-spacing: 3px; text-transform: uppercase;
-  margin-bottom: 8px;
-}
-.url-input-wrap {
-  display: flex; gap: 8px;
-}
-.url-input {
-  flex: 1; background: rgba(0,200,255,0.05);
-  border: 1px solid rgba(0,200,255,0.2);
-  color: var(--text);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; padding: 10px 12px;
-  border-radius: 2px; outline: none;
-  letter-spacing: 1px;
-}
-.url-copy {
-  padding: 8px 16px;
-  background: rgba(0,200,255,0.1);
-  border: 1px solid rgba(0,200,255,0.3);
-  color: var(--cyan); cursor: pointer;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; letter-spacing: 2px;
-  border-radius: 2px; white-space: nowrap;
-  transition: all 0.2s;
-}
-.url-copy:hover {
-  background: rgba(0,200,255,0.2);
-  box-shadow: var(--glow);
-}
-.url-copy.copied { color: var(--cyan2); border-color: var(--cyan2); }
-
-/* ── PROGRESS ── */
-.progress-section { margin-top: 20px; display: none; }
-.progress-section.visible { display: block; }
-.progress-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 8px;
-}
-.progress-title {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--dim); letter-spacing: 2px;
-}
-.progress-pct {
-  font-family: 'Orbitron', monospace;
-  font-size: 14px; font-weight: 600;
-  color: var(--cyan);
-}
-.progress-bar-wrap {
-  height: 4px; background: rgba(0,200,255,0.1);
-  border-radius: 4px; overflow: hidden; position: relative;
-}
-.progress-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--cyan2), var(--cyan));
-  border-radius: 4px; width: 0%;
-  transition: width 0.2s ease;
-  box-shadow: 0 0 8px var(--cyan);
-  position: relative;
-}
-.progress-bar-fill::after {
-  content: '';
-  position: absolute; right: 0; top: 50%;
-  transform: translateY(-50%);
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 12px var(--cyan);
-}
-.progress-stats {
-  display: flex; gap: 24px; margin-top: 10px;
-}
-.p-stat {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--dim);
-  letter-spacing: 1px;
-}
-.p-stat span {
-  color: var(--text); font-weight: 600;
-}
-
-/* ── STATUS MESSAGES ── */
-.status-msg {
-  margin-top: 14px;
-  padding: 10px 14px;
-  background: rgba(0,200,255,0.05);
-  border-left: 2px solid var(--cyan);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: var(--dim);
-  letter-spacing: 1px; line-height: 1.6;
-  display: none;
-}
-.status-msg.visible { display: block; }
-.status-msg.success { border-color: var(--cyan2); color: var(--cyan2); }
-.status-msg.error { border-color: var(--red); color: var(--red); }
-.status-msg.info { border-color: var(--gold); color: var(--gold); }
-
-/* ── RECEIVE SECTION ── */
-.receive-input-wrap {
-  display: flex; flex-direction: column; gap: 12px;
-}
-.receive-input {
-  width: 100%;
-  background: rgba(0,200,255,0.04);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 12px; padding: 14px 16px;
-  border-radius: 2px; outline: none;
-  letter-spacing: 1px;
-  transition: border-color 0.3s;
-}
-.receive-input:focus { border-color: var(--cyan); }
-.receive-input::placeholder { color: var(--dim); opacity: 0.6; }
-
-/* ── DOWNLOAD AREA ── */
-.download-area {
-  margin-top: 20px; display: none;
-}
-.download-area.visible { display: block; }
-.dl-file-card {
-  padding: 16px;
-  background: rgba(0,255,200,0.04);
-  border: 1px solid rgba(0,255,200,0.2);
-  border-radius: 3px;
-  display: flex; align-items: center; gap: 16px;
-  margin-bottom: 12px;
-}
-.dl-file-icon { font-size: 32px; }
-.dl-file-info { flex: 1; }
-.dl-file-name {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 13px; color: var(--text);
-  margin-bottom: 4px;
-}
-.dl-file-size {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: var(--dim);
-}
-
-/* ── ENCRYPTION INDICATOR ── */
-.enc-indicator {
-  display: flex; align-items: center; gap: 10px;
-  margin-top: 16px; padding: 10px 14px;
-  background: rgba(0,200,255,0.04);
-  border: 1px solid rgba(0,200,255,0.15);
-  border-radius: 2px;
-}
-.enc-icon { font-size: 16px; }
-.enc-text {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--dim);
-  letter-spacing: 1px;
-}
-.enc-text strong { color: var(--cyan2); }
-
-/* ── FOOTER ── */
-footer {
-  padding: 24px 40px;
-  border-top: 1px solid var(--border);
-  display: flex; justify-content: space-between; align-items: center;
-  flex-wrap: wrap; gap: 16px;
-}
-.footer-info {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--dim);
-  letter-spacing: 2px; text-transform: uppercase;
-}
-.footer-links {
-  display: flex; gap: 24px;
-}
-.footer-links a {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--dim);
-  letter-spacing: 2px; text-decoration: none;
-  text-transform: uppercase;
-  transition: color 0.2s;
-}
-.footer-links a:hover { color: var(--cyan); }
-
-/* ── NOTIFICATION TOAST ── */
-.toast {
-  position: fixed; bottom: 32px; right: 32px;
-  padding: 14px 20px; z-index: 9999;
-  background: var(--bg2);
-  border: 1px solid var(--cyan);
-  border-radius: 3px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: var(--cyan);
-  letter-spacing: 1px;
-  box-shadow: var(--glow2);
-  animation: toast-in 0.4s ease;
-  display: flex; align-items: center; gap: 10px;
-  max-width: 320px;
-}
-.toast.success { border-color: var(--cyan2); color: var(--cyan2); }
-.toast.error { border-color: var(--red); color: var(--red); }
-@keyframes toast-in {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-/* ── PEER STATUS ── */
-.peer-status-bar {
-  display: flex; align-items: center; justify-content: center;
-  gap: 8px; margin-top: 16px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; letter-spacing: 2px; color: var(--dim);
-}
-.peer-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #555; transition: background 0.3s, box-shadow 0.3s;
-}
-.peer-dot.online { background: var(--cyan2); box-shadow: 0 0 8px var(--cyan2); }
-.peer-dot.connecting { background: var(--gold); box-shadow: 0 0 8px var(--gold); animation: blink 1s infinite; }
-.peer-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
-
-/* ── SCANLINE OVERLAY ── */
-.scanlines {
-  position: fixed; inset: 0; z-index: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,0.08) 2px,
-    rgba(0,0,0,0.08) 4px
-  );
-  pointer-events: none;
-}
-
-/* ── RESPONSIVE ── */
-@media (max-width: 768px) {
-  .transfer-container {
-    grid-template-columns: 1fr;
-  }
-  .panel-divider {
-    flex-direction: row; padding: 0 24px;
-  }
-  .divider-line { flex: 1; width: auto; height: 1px; }
-  header { padding: 16px 20px; }
-  .header-stats { display: none; }
-  main { padding: 32px 20px; }
-}
+:root{--bg:#020408;--bg2:#050d15;--panel:rgba(0,200,255,0.04);--border:rgba(0,200,255,0.18);--cyan:#00c8ff;--cyan2:#00ffcc;--red:#ff2d55;--gold:#ffd700;--text:#c8eeff;--dim:rgba(200,238,255,0.45);--glow:0 0 20px rgba(0,200,255,0.5);--glow2:0 0 40px rgba(0,200,255,0.3)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;overflow-x:hidden}
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+.scanlines{position:fixed;inset:0;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none}
+/* LOADER */
+#loader{position:fixed;inset:0;z-index:1000;background:#020408;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease,visibility .8s}
+#loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.l-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,200,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,0.04) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+.l-scan{position:absolute;left:0;right:0;height:3px;background:linear-gradient(transparent,rgba(0,200,255,0.15),transparent);animation:lscan 3s linear infinite;pointer-events:none}
+@keyframes lscan{0%{top:-3px}100%{top:100%}}
+.l-hex{width:130px;height:130px;margin-bottom:36px;animation:hexspin 4s linear infinite}
+@keyframes hexspin{to{transform:rotate(360deg)}}
+.l-hex .r1{animation:rp 1.5s ease-in-out infinite}
+.l-hex .r2{animation:rp 1.5s ease-in-out infinite .25s}
+.l-hex .r3{animation:rp 1.5s ease-in-out infinite .5s}
+@keyframes rp{0%,100%{opacity:1;stroke-width:1.5}50%{opacity:.25;stroke-width:.5}}
+.l-orb{animation:orbit 6s linear infinite;transform-origin:65px 65px}
+@keyframes orbit{to{transform:rotate(-360deg)}}
+.l-title{font-family:'Orbitron',monospace;font-size:30px;font-weight:900;letter-spacing:5px;color:var(--cyan);text-shadow:var(--glow);margin-bottom:6px;animation:flicker 5s infinite}
+@keyframes flicker{0%,93%,95%,100%{opacity:1}94%{opacity:.5}}
+.l-sub{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:6px;color:var(--cyan2);text-transform:uppercase;margin-bottom:48px}
+.l-barwrap{width:340px;height:2px;background:rgba(0,200,255,0.1);border-radius:2px;overflow:hidden;margin-bottom:16px}
+.l-bar{height:100%;background:linear-gradient(90deg,var(--cyan2),var(--cyan),var(--cyan2));border-radius:2px;width:0%;transition:width .15s linear;box-shadow:0 0 12px var(--cyan)}
+.l-status{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:2px;min-height:16px;text-align:center}
+.l-nodes{display:flex;gap:6px;margin-top:24px}
+.l-node{width:6px;height:6px;border-radius:50%;background:rgba(0,200,255,0.2);animation:npulse 1.2s ease-in-out infinite}
+.l-node:nth-child(2){animation-delay:.2s}.l-node:nth-child(3){animation-delay:.4s}.l-node:nth-child(4){animation-delay:.6s}.l-node:nth-child(5){animation-delay:.8s}
+@keyframes npulse{0%,100%{background:rgba(0,200,255,0.2);transform:scale(1)}50%{background:var(--cyan);transform:scale(1.4);box-shadow:0 0 8px var(--cyan)}}
+/* APP */
+#app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;opacity:0;transition:opacity 1s ease}
+#app.visible{opacity:1}
+/* HEADER */
+header{padding:22px 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(0,200,255,0.07) 0%,transparent 100%);position:relative}
+header::after{content:'';position:absolute;bottom:-1px;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:var(--glow)}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-icon{width:42px;height:42px}
+.logo-icon svg{width:100%;height:100%}
+.logo-name{font-family:'Orbitron',monospace;font-size:19px;font-weight:900;letter-spacing:3px;color:var(--cyan);text-shadow:var(--glow);line-height:1}
+.logo-tagline{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--cyan2);text-transform:uppercase;margin-top:3px}
+.hdr-badges{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hbadge{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:2px;background:var(--panel);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);white-space:nowrap}
+.hbadge .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan2);box-shadow:0 0 6px var(--cyan2);animation:blink 2s ease-in-out infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+/* MAIN */
+main{flex:1;display:flex;flex-direction:column;align-items:center;padding:50px 30px 60px;gap:40px}
+.hero-text{text-align:center;max-width:680px}
+.hero-title{font-family:'Orbitron',monospace;font-size:clamp(24px,3.5vw,44px);font-weight:900;line-height:1.2;margin-bottom:14px}
+.hero-title .l1{color:var(--text);display:block}
+.hero-title .l2{display:block;color:transparent;-webkit-text-stroke:1px var(--cyan);letter-spacing:3px}
+.hero-desc{font-size:13px;color:var(--dim);letter-spacing:.5px;line-height:1.9;font-weight:300}
+.ftags{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.ftag{display:flex;align-items:center;gap:7px;padding:6px 13px;border:1px solid var(--border);border-radius:2px;background:var(--panel);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+/* GRID */
+.tgrid{display:grid;grid-template-columns:1fr 70px 1fr;align-items:start;width:100%;max-width:980px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:28px;position:relative;overflow:hidden}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:var(--glow)}
+.pc{position:absolute;width:11px;height:11px;border-color:var(--cyan);border-style:solid;opacity:.7}
+.pc.tl{top:-1px;left:-1px;border-width:2px 0 0 2px}.pc.tr{top:-1px;right:-1px;border-width:2px 2px 0 0}
+.pc.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px}.pc.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+.plabel{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--dim);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.plabel::after{content:'';flex:1;height:1px;background:var(--border)}
+.ptitle{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--text);margin-bottom:22px;letter-spacing:1px}
+/* DROP ZONE */
+.dz{border:1px dashed var(--border);border-radius:4px;padding:44px 20px;text-align:center;cursor:pointer;transition:all .3s;background:rgba(0,200,255,0.02)}
+.dz:hover,.dz.over{border-color:var(--cyan);background:rgba(0,200,255,0.07);box-shadow:inset 0 0 30px rgba(0,200,255,0.08)}
+.dz-ico{font-size:44px;margin-bottom:14px;display:block;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.dz-title{font-family:'Orbitron',monospace;font-size:13px;color:var(--text);margin-bottom:7px;letter-spacing:1px}
+.dz-sub{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:1px}
+.dz-tag{margin-top:11px;display:inline-block;padding:3px 12px;border:1px solid rgba(0,255,200,.3);font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--cyan2);letter-spacing:2px}
+#file-input{display:none}
+/* FILE LIST */
+.flist{margin-top:14px;display:flex;flex-direction:column;gap:7px}
+.fi{display:flex;align-items:center;gap:11px;padding:10px 12px;background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.12);border-radius:3px;animation:sli .3s ease}
+@keyframes sli{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.fi-ico{font-size:18px;flex-shrink:0}
+.fi-info{flex:1;min-width:0}
+.fi-name{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fi-sz{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);margin-top:2px}
+.fi-rm{background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:2px 6px;flex-shrink:0}
+/* ENC */
+.enc-ind{display:flex;align-items:center;gap:9px;margin-top:16px;padding:9px 13px;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.15);border-radius:2px}
+.enc-text{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.5px}
+.enc-text strong{color:var(--cyan2)}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:13px 24px;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border:none;border-radius:2px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;width:100%;margin-top:16px}
+.btn::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);transform:translateX(-100%);transition:transform .5s}
+.btn:hover::before{transform:translateX(100%)}
+.btn-pri{background:linear-gradient(135deg,#003850,#005878);color:var(--cyan);border:1px solid var(--cyan);box-shadow:0 0 18px rgba(0,200,255,0.2)}
+.btn-pri:hover{background:linear-gradient(135deg,#004d6e,#006e96);box-shadow:0 0 28px rgba(0,200,255,0.4);transform:translateY(-1px)}
+.btn-pri:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-suc{background:linear-gradient(135deg,#003828,#005040);color:var(--cyan2);border:1px solid var(--cyan2);box-shadow:0 0 18px rgba(0,255,200,0.2)}
+.btn-suc:hover{box-shadow:0 0 28px rgba(0,255,200,0.4);transform:translateY(-1px)}
+.btn-warn{background:linear-gradient(135deg,#2a1b00,#473200);color:var(--gold);border:1px solid var(--gold);box-shadow:0 0 18px rgba(255,215,0,0.12)}
+.btn-warn:hover{box-shadow:0 0 28px rgba(255,215,0,0.3);transform:translateY(-1px)}
+/* DIVIDER */
+.pdiv{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.dline{width:1px;flex:1;background:linear-gradient(180deg,transparent,var(--border),transparent)}
+.dico{width:46px;height:46px;border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:13px;color:var(--dim);background:var(--bg2)}
+/* URL BOX */
+.url-box{margin-top:18px;padding:15px;background:rgba(0,200,255,0.03);border:1px solid var(--border);border-radius:3px;display:none}
+.url-box.on{display:block;animation:fadein .5s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.url-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--cyan2);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+.url-row{display:flex;gap:7px}
+.url-inp{flex:1;background:rgba(0,200,255,0.05);border:1px solid rgba(0,200,255,0.2);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:9px 11px;border-radius:2px;outline:none;letter-spacing:.5px;min-width:0}
+.url-cp{padding:8px 14px;background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.3);color:var(--cyan);cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;border-radius:2px;white-space:nowrap;transition:all .2s;flex-shrink:0}
+.url-cp:hover{background:rgba(0,200,255,0.2);box-shadow:var(--glow)}
+.url-cp.copied{color:var(--cyan2);border-color:var(--cyan2)}
+/* PROGRESS */
+.prog-sec{margin-top:18px;display:none}
+.prog-sec.on{display:block}
+.prog-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.prog-lbl{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px}
+.prog-pct{font-family:'Orbitron',monospace;font-size:14px;font-weight:600;color:var(--cyan)}
+.prog-wrap{height:4px;background:rgba(0,200,255,0.1);border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--cyan2),var(--cyan));border-radius:4px;width:0%;transition:width .2s ease;box-shadow:0 0 8px var(--cyan)}
+.prog-stats{display:flex;gap:20px;margin-top:9px;flex-wrap:wrap}
+.pstat{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.5px}
+.pstat span{color:var(--text);font-weight:600}
+/* STATUS */
+.smsg{margin-top:12px;padding:10px 13px;background:rgba(0,200,255,0.05);border-left:2px solid var(--cyan);font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.5px;line-height:1.65;display:none}
+.smsg.on{display:block}
+.smsg.ok{border-color:var(--cyan2);color:var(--cyan2)}
+.smsg.err{border-color:var(--red);color:var(--red)}
+.smsg.warn{border-color:var(--gold);color:var(--gold)}
+/* PEER DOT */
+.pstatus{display:flex;align-items:center;gap:8px;margin-top:14px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim)}
+.pdot{width:8px;height:8px;border-radius:50%;background:#333;transition:all .4s;flex-shrink:0}
+.pdot.ready{background:var(--cyan2);box-shadow:0 0 8px var(--cyan2)}
+.pdot.conn{background:var(--gold);box-shadow:0 0 8px var(--gold);animation:blink 1s infinite}
+.pdot.err{background:var(--red);box-shadow:0 0 8px var(--red)}
+.pdot.done{background:var(--cyan2);box-shadow:0 0 12px var(--cyan2)}
+/* RECEIVE */
+.recv-inp{width:100%;background:rgba(0,200,255,0.04);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;padding:13px 15px;border-radius:2px;outline:none;letter-spacing:.5px;transition:border-color .3s;margin-bottom:8px}
+.recv-inp:focus{border-color:var(--cyan)}
+.recv-inp::placeholder{color:var(--dim);opacity:.55}
+.recv-hint{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.5px;line-height:1.7;margin-bottom:14px}
+/* DOWNLOAD */
+.dl-area{margin-top:18px;display:none}
+.dl-area.on{display:block}
+.dl-card{padding:14px;background:rgba(0,255,200,0.04);border:1px solid rgba(0,255,200,.2);border-radius:3px;display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.dl-ico{font-size:30px}
+.dl-info{flex:1}
+.dl-name{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text);margin-bottom:3px;word-break:break-all}
+.dl-sz{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim)}
+/* DIAG */
+.diag{margin-top:12px;padding:12px 14px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.25);border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:.5px;line-height:1.7;display:none}
+.diag.on{display:block}
+/* FOOTER */
+footer{padding:22px 40px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.finfo{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+.flinks{display:flex;gap:22px}
+.flinks a{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;text-decoration:none;text-transform:uppercase;transition:color .2s}
+.flinks a:hover{color:var(--cyan)}
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:28px;padding:13px 18px;z-index:9999;background:var(--bg2);border:1px solid var(--cyan);border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--cyan);letter-spacing:1px;box-shadow:var(--glow2);animation:toastin .4s ease;display:flex;align-items:center;gap:9px;max-width:320px}
+.toast.ok{border-color:var(--cyan2);color:var(--cyan2)}.toast.err{border-color:var(--red);color:var(--red)}.toast.warn{border-color:var(--gold);color:var(--gold)}
+@keyframes toastin{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@media(max-width:760px){.tgrid{grid-template-columns:1fr}.pdiv{flex-direction:row}.dline{width:auto;height:1px;flex:1}header{padding:14px 18px}.hdr-badges .hbadge:nth-child(n+3){display:none}main{padding:30px 16px 50px}}
 </style>
 </head>
 <body>
-
 <canvas id="bg-canvas"></canvas>
 <div class="scanlines"></div>
 
-<!-- ───── LOADER ───── -->
+<!-- LOADER -->
 <div id="loader">
-  <div class="loader-grid"></div>
-  <div class="loader-scanline"></div>
-  <div class="loader-hex">
-    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon class="ring1" points="60,8 108,35 108,85 60,112 12,85 12,35" stroke="#00c8ff" stroke-width="1.5" fill="none"/>
-      <polygon class="ring2" points="60,20 96,41 96,79 60,100 24,79 24,41" stroke="#00ffcc" stroke-width="1" fill="none" opacity="0.7"/>
-      <polygon class="ring3" points="60,32 84,47 84,73 60,88 36,73 36,47" stroke="#00c8ff" stroke-width="0.8" fill="none" opacity="0.5"/>
-      <circle cx="60" cy="60" r="6" fill="#00c8ff" opacity="0.9"/>
-      <circle cx="60" cy="60" r="14" stroke="#00c8ff" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <line x1="60" y1="8" x2="60" y2="20" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
-      <line x1="108" y1="35" x2="96" y2="41" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
-      <line x1="108" y1="85" x2="96" y2="79" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
-      <line x1="60" y1="112" x2="60" y2="100" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
-      <line x1="12" y1="85" x2="24" y2="79" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
-      <line x1="12" y1="35" x2="24" y2="41" stroke="#00c8ff" stroke-width="1" opacity="0.5"/>
-    </svg>
-  </div>
-  <div class="loader-title">FARDOMAX</div>
-  <div class="loader-sub">Secure Transmit • Initializing</div>
-  <div class="loader-bar-wrap">
-    <div class="loader-bar" id="loader-bar"></div>
-  </div>
-  <div class="loader-status" id="loader-status">Establishing secure channel...</div>
+  <div class="l-grid"></div><div class="l-scan"></div>
+  <svg class="l-hex" viewBox="0 0 130 130" fill="none">
+    <polygon class="r1" points="65,5 115,32 115,98 65,125 15,98 15,32" stroke="#00c8ff" stroke-width="1.5" fill="none"/>
+    <polygon class="r2" points="65,18 102,40 102,90 65,112 28,90 28,40" stroke="#00ffcc" stroke-width="1" fill="none" opacity=".7"/>
+    <polygon class="r3" points="65,30 90,47 90,83 65,100 40,83 40,47" stroke="#00c8ff" stroke-width=".8" fill="none" opacity=".5"/>
+    <g class="l-orb"><circle cx="115" cy="65" r="4" fill="#00c8ff" opacity=".8"/><circle cx="15" cy="65" r="3" fill="#00ffcc" opacity=".6"/><circle cx="65" cy="5" r="3" fill="#00c8ff" opacity=".6"/></g>
+    <circle cx="65" cy="65" r="7" fill="#00c8ff" opacity=".9"/>
+    <circle cx="65" cy="65" r="16" stroke="#00c8ff" stroke-width=".4" fill="none" opacity=".35"/>
+    <line x1="65" y1="5" x2="65" y2="18" stroke="#00c8ff" stroke-width="1" opacity=".5"/>
+    <line x1="115" y1="32" x2="102" y2="40" stroke="#00c8ff" stroke-width="1" opacity=".5"/>
+    <line x1="115" y1="98" x2="102" y2="90" stroke="#00c8ff" stroke-width="1" opacity=".5"/>
+    <line x1="65" y1="125" x2="65" y2="112" stroke="#00c8ff" stroke-width="1" opacity=".5"/>
+    <line x1="15" y1="98" x2="28" y2="90" stroke="#00c8ff" stroke-width="1" opacity=".5"/>
+    <line x1="15" y1="32" x2="28" y2="40" stroke="#00c8ff" stroke-width="1" opacity=".5"/>
+  </svg>
+  <div class="l-title">FARDOMAX</div>
+  <div class="l-sub">Secure Transmit · Initializing</div>
+  <div class="l-barwrap"><div class="l-bar" id="lbar"></div></div>
+  <div class="l-status" id="lstatus">Establishing secure channel...</div>
+  <div class="l-nodes"><div class="l-node"></div><div class="l-node"></div><div class="l-node"></div><div class="l-node"></div><div class="l-node"></div></div>
 </div>
 
-<!-- ───── APP ───── -->
+<!-- APP -->
 <div id="app">
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 44 44" fill="none"><polygon points="22,2 40,12 40,32 22,42 4,32 4,12" stroke="#00c8ff" stroke-width="1.5" fill="rgba(0,200,255,0.06)"/><polygon points="22,8 34,15 34,29 22,36 10,29 10,15" stroke="#00ffcc" stroke-width=".8" fill="none" opacity=".5"/><circle cx="22" cy="22" r="5" fill="#00c8ff" opacity=".9"/><line x1="22" y1="2" x2="22" y2="8" stroke="#00c8ff" stroke-width="1"/><line x1="40" y1="12" x2="34" y2="15" stroke="#00c8ff" stroke-width="1"/><line x1="40" y1="32" x2="34" y2="29" stroke="#00c8ff" stroke-width="1"/><line x1="22" y1="42" x2="22" y2="36" stroke="#00c8ff" stroke-width="1"/><line x1="4" y1="32" x2="10" y2="29" stroke="#00c8ff" stroke-width="1"/><line x1="4" y1="12" x2="10" y2="15" stroke="#00c8ff" stroke-width="1"/></svg>
+    </div>
+    <div><div class="logo-name">FARDOMAX</div><div class="logo-tagline">Secure Transmit</div></div>
+  </div>
+  <div class="hdr-badges">
+    <div class="hbadge"><span class="dot"></span>E2E ENCRYPTED</div>
+    <div class="hbadge">⚡ DIRECT P2P</div>
+    <div class="hbadge">∞ NO LIMIT</div>
+    <div class="hbadge">🌍 WORLDWIDE</div>
+  </div>
+</header>
 
-  <header>
-    <div class="logo">
-      <div class="logo-icon">
-        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="22,2 40,12 40,32 22,42 4,32 4,12" stroke="#00c8ff" stroke-width="1.5" fill="rgba(0,200,255,0.06)"/>
-          <polygon points="22,8 34,15 34,29 22,36 10,29 10,15" stroke="#00ffcc" stroke-width="0.8" fill="none" opacity="0.5"/>
-          <circle cx="22" cy="22" r="5" fill="#00c8ff" opacity="0.9"/>
-          <line x1="22" y1="2" x2="22" y2="12" stroke="#00c8ff" stroke-width="1"/>
-          <line x1="40" y1="12" x2="34" y2="15" stroke="#00c8ff" stroke-width="1"/>
-          <line x1="40" y1="32" x2="34" y2="29" stroke="#00c8ff" stroke-width="1"/>
-          <line x1="22" y1="42" x2="22" y2="32" stroke="#00c8ff" stroke-width="1"/>
-          <line x1="4" y1="32" x2="10" y2="29" stroke="#00c8ff" stroke-width="1"/>
-          <line x1="4" y1="12" x2="10" y2="15" stroke="#00c8ff" stroke-width="1"/>
-        </svg>
+<main>
+  <div class="hero-text">
+    <h1 class="hero-title"><span class="l1">Transfer Anything.</span><span class="l2">No Servers. No Limits.</span></h1>
+    <p class="hero-desc">Military-grade AES-256-GCM encrypted peer-to-peer transfers. Files travel directly browser-to-browser via WebRTC + TURN relay — no cloud storage, no size limits, no speed caps. Works anywhere in the world.</p>
+  </div>
+  <div class="ftags">
+    <div class="ftag">🔒 AES-256-GCM</div>
+    <div class="ftag">∞ Unlimited Size</div>
+    <div class="ftag">⚡ Max Speed</div>
+    <div class="ftag">🌍 Global TURN Relay</div>
+    <div class="ftag">🚫 Zero Storage</div>
+    <div class="ftag">🔗 Unique Share URL</div>
+  </div>
+
+  <div class="tgrid">
+    <!-- SEND -->
+    <div class="panel">
+      <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+      <div class="plabel">Module 01</div>
+      <div class="ptitle">⬆ Send Files</div>
+      <div class="dz" id="dz" onclick="document.getElementById('fi').click()">
+        <span class="dz-ico">📂</span>
+        <div class="dz-title">Drop Files Here</div>
+        <div class="dz-sub">or click to browse · any format · any size</div>
+        <div class="dz-tag">∞ UNLIMITED SIZE</div>
       </div>
-      <div class="logo-text">
-        <div class="logo-name">FARDOMAX</div>
-        <div class="logo-tagline">Secure Transmit</div>
+      <input type="file" id="fi" multiple>
+      <div class="flist" id="flist"></div>
+      <div class="enc-ind"><span>🔐</span><div class="enc-text">AES-256-GCM encrypted · <strong>Zero server storage</strong> · TURN relay bypass</div></div>
+      <button class="btn btn-pri" id="send-btn" disabled>◈ GENERATE SECURE LINK</button>
+      <div class="pstatus"><div class="pdot" id="sdot"></div><span id="sdot-lbl">NOT STARTED</span></div>
+      <div class="url-box" id="url-box">
+        <div class="url-label">🔗 Shareable Secure Link</div>
+        <div class="url-row"><input class="url-inp" id="url-disp" readonly><button class="url-cp" id="cp-btn" onclick="copyURL()">COPY</button></div>
+      </div>
+      <div class="smsg" id="smsg-s"></div>
+      <div class="diag" id="diag-s"></div>
+      <div class="prog-sec" id="prog-s">
+        <div class="prog-hdr"><span class="prog-lbl" id="plbl-s">TRANSMITTING</span><span class="prog-pct" id="spct">0%</span></div>
+        <div class="prog-wrap"><div class="prog-fill" id="sbar"></div></div>
+        <div class="prog-stats">
+          <div class="pstat">Sent: <span id="ssent">0B</span></div>
+          <div class="pstat">Total: <span id="stotal">0B</span></div>
+          <div class="pstat">Speed: <span id="sspd">—</span></div>
+          <div class="pstat">File: <span id="sfile">—</span></div>
+        </div>
       </div>
     </div>
-    <div class="header-stats">
-      <div class="stat-item">
-        <div class="stat-label">Protocol</div>
-        <div class="stat-val">WebRTC P2P</div>
+
+    <!-- DIVIDER -->
+    <div class="pdiv"><div class="dline"></div><div class="dico">⇄</div><div class="dline"></div></div>
+
+    <!-- RECEIVE -->
+    <div class="panel">
+      <div class="pc tl"></div><div class="pc tr"></div><div class="pc bl"></div><div class="pc br"></div>
+      <div class="plabel">Module 02</div>
+      <div class="ptitle">⬇ Receive Files</div>
+      <div class="recv-hint">Paste the share link from the sender. The link contains the decryption key — keep it private.</div>
+      <input class="recv-inp" id="rinp" type="text" placeholder="Paste share link here…  https://…#fmx-xxx|key">
+      <button class="btn btn-pri" id="recv-btn">◈ CONNECT &amp; RECEIVE</button>
+      <button class="btn btn-warn" id="retry-btn" style="display:none">↺ RETRY CONNECTION</button>
+      <div class="pstatus"><div class="pdot" id="rdot"></div><span id="rdot-lbl">WAITING</span></div>
+      <div class="smsg" id="smsg-r"></div>
+      <div class="diag" id="diag-r"></div>
+      <div class="prog-sec" id="prog-r">
+        <div class="prog-hdr"><span class="prog-lbl" id="plbl-r">RECEIVING</span><span class="prog-pct" id="rpct">0%</span></div>
+        <div class="prog-wrap"><div class="prog-fill" id="rbar"></div></div>
+        <div class="prog-stats">
+          <div class="pstat">Received: <span id="rrcvd">0B</span></div>
+          <div class="pstat">Total: <span id="rtotal">0B</span></div>
+          <div class="pstat">Speed: <span id="rspd">—</span></div>
+          <div class="pstat">File: <span id="rfile">—</span></div>
+        </div>
       </div>
-      <div class="stat-item">
-        <div class="stat-label">Encryption</div>
-        <div class="stat-val">AES-256</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">File Limit</div>
-        <div class="stat-val">∞ NONE</div>
-      </div>
+      <div class="dl-area" id="dl-area"></div>
     </div>
-    <div class="security-badge">
-      <span class="dot"></span>
-      END-TO-END ENCRYPTED
-    </div>
-  </header>
+  </div>
+</main>
 
-  <main>
-    <div class="hero-text">
-      <h1 class="hero-title">
-        <span class="line1">Transfer Anything.</span>
-        <span class="line2">No Limits. No Servers.</span>
-      </h1>
-      <p class="hero-desc">
-        Direct peer-to-peer file transfer with military-grade encryption. No file size limit, no upload to servers — your data travels directly to the recipient. Anywhere in the world.
-      </p>
-    </div>
-
-    <div class="features-strip">
-      <div class="feature-tag"><span class="icon">🔒</span> AES-256 Encrypted</div>
-      <div class="feature-tag"><span class="icon">∞</span> Unlimited File Size</div>
-      <div class="feature-tag"><span class="icon">⚡</span> Max Speed P2P</div>
-      <div class="feature-tag"><span class="icon">🌍</span> Worldwide</div>
-      <div class="feature-tag"><span class="icon">🚫</span> Zero Storage</div>
-      <div class="feature-tag"><span class="icon">🔗</span> Unique Share URL</div>
-    </div>
-
-    <div class="transfer-container">
-
-      <!-- ─── SEND PANEL ─── -->
-      <div class="panel" id="send-panel">
-        <div class="panel-corner tl"></div>
-        <div class="panel-corner tr"></div>
-        <div class="panel-corner bl"></div>
-        <div class="panel-corner br"></div>
-        <div class="panel-label">Module 01</div>
-        <div class="panel-title">⬆ Send Files</div>
-
-        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
-          <span class="dz-icon">📂</span>
-          <div class="dz-title">Drop Files Here</div>
-          <div class="dz-sub">or click to browse • any format</div>
-          <div class="dz-unlimited">∞ UNLIMITED SIZE</div>
-        </div>
-        <input type="file" id="file-input" multiple>
-
-        <div class="file-list" id="file-list"></div>
-
-        <div class="enc-indicator">
-          <span class="enc-icon">🔐</span>
-          <div class="enc-text">All transfers <strong>AES-256 encrypted</strong> · Zero server storage · Direct P2P</div>
-        </div>
-
-        <button class="btn btn-primary" id="send-btn" disabled>
-          ◈ GENERATE SECURE LINK
-        </button>
-
-        <div class="peer-status-bar">
-          <div class="peer-dot" id="send-dot"></div>
-          <span id="send-dot-label">NOT CONNECTED</span>
-        </div>
-
-        <div class="url-box" id="url-box">
-          <div class="url-label">🔗 Shareable Secure Link</div>
-          <div class="url-input-wrap">
-            <input class="url-input" id="url-display" readonly>
-            <button class="url-copy" id="copy-btn" onclick="copyURL()">COPY</button>
-          </div>
-        </div>
-
-        <div class="status-msg" id="send-status"></div>
-
-        <div class="progress-section" id="send-progress">
-          <div class="progress-header">
-            <span class="progress-title">TRANSMITTING</span>
-            <span class="progress-pct" id="send-pct">0%</span>
-          </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar-fill" id="send-bar"></div>
-          </div>
-          <div class="progress-stats">
-            <div class="p-stat">Sent: <span id="send-sent">0 B</span></div>
-            <div class="p-stat">Total: <span id="send-total">0 B</span></div>
-            <div class="p-stat">Speed: <span id="send-speed">—</span></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ─── DIVIDER ─── -->
-      <div class="panel-divider">
-        <div class="divider-line"></div>
-        <div class="divider-icon">⇄</div>
-        <div class="divider-line"></div>
-      </div>
-
-      <!-- ─── RECEIVE PANEL ─── -->
-      <div class="panel" id="recv-panel">
-        <div class="panel-corner tl"></div>
-        <div class="panel-corner tr"></div>
-        <div class="panel-corner bl"></div>
-        <div class="panel-corner br"></div>
-        <div class="panel-label">Module 02</div>
-        <div class="panel-title">⬇ Receive Files</div>
-
-        <div class="receive-input-wrap">
-          <p style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:1px;line-height:1.6;margin-bottom:4px;">
-            Paste the secure link shared by the sender, or it will auto-load if you opened this page from a share link.
-          </p>
-          <input class="receive-input" id="recv-url-input" type="text" placeholder="Paste secure share link here…">
-          <button class="btn btn-primary" id="recv-btn">
-            ◈ CONNECT &amp; RECEIVE
-          </button>
-        </div>
-
-        <div class="peer-status-bar">
-          <div class="peer-dot" id="recv-dot"></div>
-          <span id="recv-dot-label">WAITING</span>
-        </div>
-
-        <div class="status-msg" id="recv-status"></div>
-
-        <div class="progress-section" id="recv-progress">
-          <div class="progress-header">
-            <span class="progress-title">RECEIVING</span>
-            <span class="progress-pct" id="recv-pct">0%</span>
-          </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar-fill" id="recv-bar"></div>
-          </div>
-          <div class="progress-stats">
-            <div class="p-stat">Received: <span id="recv-rcvd">0 B</span></div>
-            <div class="p-stat">Total: <span id="recv-total">0 B</span></div>
-            <div class="p-stat">Speed: <span id="recv-speed">—</span></div>
-          </div>
-        </div>
-
-        <div class="download-area" id="dl-area"></div>
-      </div>
-
-    </div><!-- end transfer-container -->
-  </main>
-
-  <footer>
-    <div class="footer-info">Fardomax Secure Transmit © 2025 · WebRTC P2P · Zero Server Storage</div>
-    <div class="footer-links">
-      <a href="#">Privacy</a>
-      <a href="#">Security</a>
-      <a href="#">Docs</a>
-    </div>
-  </footer>
-
-</div><!-- #app -->
+<footer>
+  <div class="finfo">Fardomax Secure Transmit © 2025 · WebRTC P2P · AES-256-GCM · TURN Relay</div>
+  <div class="flinks"><a href="#">Privacy</a><a href="#">Security</a><a href="#">How It Works</a></div>
+</footer>
+</div>
 
 <script>
-/* ═══════════════════════════════════════════
-   BACKGROUND CANVAS — Particle Network
-═══════════════════════════════════════════ */
-(function() {
-  const canvas = document.getElementById('bg-canvas');
-  const ctx = canvas.getContext('2d');
-  let W, H, particles = [], lines = [];
-  const NUM = 60;
-
-  function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  class Particle {
-    constructor() { this.reset(); }
-    reset() {
-      this.x = Math.random() * W;
-      this.y = Math.random() * H;
-      this.vx = (Math.random() - 0.5) * 0.4;
-      this.vy = (Math.random() - 0.5) * 0.4;
-      this.r = Math.random() * 1.5 + 0.5;
-      this.alpha = Math.random() * 0.4 + 0.1;
-    }
-    update() {
-      this.x += this.vx; this.y += this.vy;
-      if (this.x < 0 || this.x > W) this.vx *= -1;
-      if (this.y < 0 || this.y > H) this.vy *= -1;
-    }
-    draw() {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(0,200,255,${this.alpha})`;
-      ctx.fill();
-    }
-  }
-
-  for (let i = 0; i < NUM; i++) particles.push(new Particle());
-
-  // Flowing data lines
-  class DataLine {
-    constructor() { this.reset(); }
-    reset() {
-      this.x = Math.random() * W;
-      this.y = -20;
-      this.speed = Math.random() * 2 + 0.5;
-      this.len = Math.random() * 60 + 20;
-      this.alpha = Math.random() * 0.3 + 0.05;
-      this.width = Math.random() * 1.5 + 0.3;
-    }
-    update() {
-      this.y += this.speed;
-      if (this.y - this.len > H) this.reset();
-    }
-    draw() {
-      const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y - this.len);
-      grad.addColorStop(0, `rgba(0,200,255,${this.alpha})`);
-      grad.addColorStop(1, 'transparent');
-      ctx.beginPath();
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = this.width;
-      ctx.moveTo(this.x, this.y);
-      ctx.lineTo(this.x, this.y - this.len);
-      ctx.stroke();
-    }
-  }
-
-  for (let i = 0; i < 30; i++) {
-    const l = new DataLine();
-    l.y = Math.random() * H;
-    lines.push(l);
-  }
-
-  function connect() {
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 140) {
-          const a = (1 - dist / 140) * 0.15;
-          ctx.beginPath();
-          ctx.strokeStyle = `rgba(0,200,255,${a})`;
-          ctx.lineWidth = 0.5;
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.stroke();
-        }
-      }
-    }
-  }
-
-  function frame() {
-    ctx.clearRect(0, 0, W, H);
-    lines.forEach(l => { l.update(); l.draw(); });
-    particles.forEach(p => { p.update(); p.draw(); });
-    connect();
-    requestAnimationFrame(frame);
-  }
-  frame();
+/* ── CANVAS BG ── */
+(function(){
+  const cv=document.getElementById('bg-canvas'),ctx=cv.getContext('2d');
+  let W,H,pts=[],strs=[];
+  const resize=()=>{W=cv.width=innerWidth;H=cv.height=innerHeight};
+  resize();addEventListener('resize',resize);
+  class P{constructor(){this.reset()}reset(){this.x=Math.random()*W;this.y=Math.random()*H;this.vx=(Math.random()-.5)*.35;this.vy=(Math.random()-.5)*.35;this.r=Math.random()*1.4+.4;this.a=Math.random()*.4+.1}update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>W)this.vx*=-1;if(this.y<0||this.y>H)this.vy*=-1}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=`rgba(0,200,255,${this.a})`;ctx.fill()}}
+  class S{constructor(){this.reset()}reset(){this.x=Math.random()*W;this.y=-20;this.sp=Math.random()*1.8+.4;this.ln=Math.random()*70+20;this.a=Math.random()*.25+.04;this.w=Math.random()*1.2+.2}update(){this.y+=this.sp;if(this.y-this.ln>H)this.reset()}draw(){const g=ctx.createLinearGradient(this.x,this.y,this.x,this.y-this.ln);g.addColorStop(0,`rgba(0,200,255,${this.a})`);g.addColorStop(1,'transparent');ctx.beginPath();ctx.strokeStyle=g;ctx.lineWidth=this.w;ctx.moveTo(this.x,this.y);ctx.lineTo(this.x,this.y-this.ln);ctx.stroke()}}
+  for(let i=0;i<55;i++)pts.push(new P());
+  for(let i=0;i<28;i++){const s=new S();s.y=Math.random()*H;strs.push(s)}
+  function conn(){for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<130){ctx.beginPath();ctx.strokeStyle=`rgba(0,200,255,${(1-d/130)*.12})`;ctx.lineWidth=.4;ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.stroke()}}}
+  (function frame(){ctx.clearRect(0,0,W,H);strs.forEach(s=>{s.update();s.draw()});pts.forEach(p=>{p.update();p.draw()});conn();requestAnimationFrame(frame)})();
 })();
 
-/* ═══════════════════════════════════════════
-   LOADING SEQUENCE
-═══════════════════════════════════════════ */
-const loaderMessages = [
-  'Establishing secure channel...',
-  'Initializing WebRTC subsystem...',
-  'Loading cryptographic modules...',
-  'Verifying end-to-end protocols...',
-  'Connecting to peer relay network...',
-  'Configuring AES-256 cipher...',
-  'System ready. Welcome to Fardomax.',
+/* ── LOADER ── */
+const LMSGS=['Establishing secure channel...','Initializing WebRTC subsystem...','Loading AES-256-GCM cipher...','Resolving TURN relay servers...','Verifying peer discovery network...','Configuring end-to-end encryption...','Activating zero-trust protocols...','System online. Ready to transmit.'];
+let lpct=0,lmi=0;
+const lbar=document.getElementById('lbar'),lstatus=document.getElementById('lstatus');
+(function tick(){
+  if(lpct>=100){setTimeout(()=>{document.getElementById('loader').classList.add('hidden');document.getElementById('app').classList.add('visible');initApp()},500);return}
+  lpct+=Math.random()*15+5;if(lpct>100)lpct=100;
+  lbar.style.width=lpct+'%';
+  if(lmi<LMSGS.length)lstatus.textContent=LMSGS[lmi++];
+  setTimeout(tick,170+Math.random()*200);
+})();
+
+/* ── HELPERS ── */
+const fmtB=b=>{if(!b||b<0)return'0B';if(b<1024)return b+'B';if(b<1<<20)return(b/1024).toFixed(1)+'KB';if(b<1<<30)return(b>>20?'':'')+(b/1048576).toFixed(1)+'MB';return(b/1073741824).toFixed(2)+'GB'};
+const fIco=n=>{const e=(n.split('.').pop()||'').toLowerCase();return({pdf:'📄',jpg:'🖼',jpeg:'🖼',png:'🖼',gif:'🖼',webp:'🖼',svg:'🖼',mp4:'🎬',avi:'🎬',mov:'🎬',mkv:'🎬',mp3:'🎵',wav:'🎵',flac:'🎵',zip:'📦',rar:'📦','7z':'📦',tar:'📦',gz:'📦',js:'💻',ts:'💻',py:'💻',html:'💻',css:'💻',doc:'📝',docx:'📝',txt:'📝',xls:'📊',xlsx:'📊',csv:'📊',exe:'⚙️',apk:'⚙️'})[e]||'📁'};
+const sstat=(id,msg,cls='')=>{const el=document.getElementById(id);el.textContent=msg;el.className='smsg on'+(cls?' '+cls:'')};
+const sdiag=(id,html)=>{const el=document.getElementById(id);el.innerHTML=html;el.className='diag on'};
+const hdiag=id=>{document.getElementById(id).className='diag'};
+const pdot=(s,c,l)=>{document.getElementById(s+'dot').className='pdot '+c;document.getElementById(s+'dot-lbl').textContent=l};
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+const uid=()=>'fmx-'+Date.now().toString(36)+Math.random().toString(36).substr(2,6);
+function toast(msg,cls='',dur=3500){const el=document.createElement('div');el.className='toast '+cls;el.textContent=({'ok':'✓ ','err':'✗ ','warn':'⚠ '}[cls]||'ℹ ')+msg;document.body.appendChild(el);setTimeout(()=>{el.style.animation='toastin .4s ease reverse';setTimeout(()=>el.remove(),420)},dur)}
+
+/* ── AES-256-GCM ── */
+let CK=null;
+const genKey=async()=>{CK=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);const raw=await crypto.subtle.exportKey('raw',CK);return Array.from(new Uint8Array(raw)).map(b=>b.toString(16).padStart(2,'0')).join('')};
+const impKey=async hex=>{const bytes=new Uint8Array(hex.match(/.{2}/g).map(b=>parseInt(b,16)));CK=await crypto.subtle.importKey('raw',bytes,{name:'AES-GCM'},false,['encrypt','decrypt'])};
+const encC=async data=>{const iv=crypto.getRandomValues(new Uint8Array(12));const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},CK,data);const out=new Uint8Array(12+enc.byteLength);out.set(iv,0);out.set(new Uint8Array(enc),12);return out.buffer};
+const decC=async data=>{const a=new Uint8Array(data);return crypto.subtle.decrypt({name:'AES-GCM',iv:a.slice(0,12)},CK,a.slice(12))};
+
+/* ── ICE SERVERS — STUN + multiple free TURN providers ── */
+const ICE=[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:stun2.l.google.com:19302'},
+  {urls:'stun:global.stun.twilio.com:3478'},
+  // Open Relay Project — free globally distributed TURN
+  {urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:80?transport=tcp','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'},
+  // Metered.ca public TURN
+  {urls:'turn:a.relay.metered.ca:80',username:'e8dd65f426e4c76a5b6e46c9',credential:'uDJrFSPgJxHaHBRv'},
+  {urls:'turn:a.relay.metered.ca:443',username:'e8dd65f426e4c76a5b6e46c9',credential:'uDJrFSPgJxHaHBRv'},
+  {urls:'turn:a.relay.metered.ca:443?transport=tcp',username:'e8dd65f426e4c76a5b6e46c9',credential:'uDJrFSPgJxHaHBRv'},
 ];
 
-let barPct = 0;
-const barEl = document.getElementById('loader-bar');
-const statusEl = document.getElementById('loader-status');
-let msgIdx = 0;
+const PCFG={
+  host:'0.peerjs.com',port:443,path:'/',secure:true,debug:0,
+  config:{iceServers:ICE,iceCandidatePoolSize:10,bundlePolicy:'max-bundle',rtcpMuxPolicy:'require'}
+};
 
-function tickLoader() {
-  if (barPct >= 100) {
-    setTimeout(() => {
-      document.getElementById('loader').classList.add('hidden');
-      document.getElementById('app').classList.add('visible');
-      initApp();
-    }, 400);
-    return;
-  }
-  barPct += Math.random() * 18 + 4;
-  if (barPct > 100) barPct = 100;
-  barEl.style.width = barPct + '%';
-  if (msgIdx < loaderMessages.length) {
-    statusEl.textContent = loaderMessages[msgIdx++];
-  }
-  setTimeout(tickLoader, 180 + Math.random() * 220);
-}
-setTimeout(tickLoader, 400);
+/* ── STATE ── */
+const CHUNK=64*1024;
+let selFiles=[],SP=null,RP=null;
 
-/* ═══════════════════════════════════════════
-   TOAST NOTIFICATION
-═══════════════════════════════════════════ */
-function showToast(msg, type = 'info', dur = 3500) {
-  const el = document.createElement('div');
-  el.className = 'toast ' + type;
-  el.textContent = (type === 'success' ? '✓ ' : type === 'error' ? '✗ ' : 'ℹ ') + msg;
-  document.body.appendChild(el);
-  setTimeout(() => {
-    el.style.animation = 'toast-in 0.4s ease reverse';
-    setTimeout(() => el.remove(), 400);
-  }, dur);
+/* ── INIT ── */
+function initApp(){
+  const hash=location.hash.slice(1);
+  if(hash&&hash.includes('|')){document.getElementById('rinp').value=location.href;toast('Share link detected — click Connect!','ok')}
+  const dz=document.getElementById('dz');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files)});
+  document.getElementById('fi').addEventListener('change',e=>addFiles(e.target.files));
+  document.getElementById('send-btn').addEventListener('click',startSend);
+  document.getElementById('recv-btn').addEventListener('click',()=>startRecv());
+  document.getElementById('retry-btn').addEventListener('click',()=>{document.getElementById('retry-btn').style.display='none';startRecv(true)});
 }
 
-/* ═══════════════════════════════════════════
-   HELPERS
-═══════════════════════════════════════════ */
-function fmtBytes(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
-  if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
-  return (b / 1073741824).toFixed(2) + ' GB';
-}
+function addFiles(files){for(const f of files)if(!selFiles.find(x=>x.name===f.name&&x.size===f.size))selFiles.push(f);renderFiles();document.getElementById('send-btn').disabled=!selFiles.length}
+window.rmFile=i=>{selFiles.splice(i,1);renderFiles();document.getElementById('send-btn').disabled=!selFiles.length};
+function renderFiles(){const ul=document.getElementById('flist');ul.innerHTML='';selFiles.forEach((f,i)=>{const el=document.createElement('div');el.className='fi';el.innerHTML=`<span class="fi-ico">${fIco(f.name)}</span><div class="fi-info"><div class="fi-name">${f.name}</div><div class="fi-sz">${fmtB(f.size)}</div></div><button class="fi-rm" onclick="rmFile(${i})">✕</button>`;ul.appendChild(el)})}
 
-function getFileIcon(name) {
-  const ext = (name.split('.').pop() || '').toLowerCase();
-  const map = {
-    pdf: '📄', jpg: '🖼', jpeg: '🖼', png: '🖼', gif: '🖼', webp: '🖼', svg: '🖼',
-    mp4: '🎬', avi: '🎬', mov: '🎬', mkv: '🎬', webm: '🎬',
-    mp3: '🎵', wav: '🎵', flac: '🎵', ogg: '🎵',
-    zip: '📦', rar: '📦', '7z': '📦', tar: '📦', gz: '📦',
-    js: '💻', ts: '💻', py: '💻', html: '💻', css: '💻', java: '💻',
-    doc: '📝', docx: '📝', txt: '📝', md: '📝',
-    xls: '📊', xlsx: '📊', csv: '📊',
-    ppt: '📋', pptx: '📋',
-    exe: '⚙️', dmg: '⚙️', apk: '⚙️',
-  };
-  return map[ext] || '📁';
-}
-
-function setStatus(id, msg, type = '') {
-  const el = document.getElementById(id);
-  el.textContent = msg;
-  el.className = 'status-msg visible ' + type;
-}
-
-function setPeerDot(side, state, label) {
-  const dot = document.getElementById(side + '-dot');
-  const lbl = document.getElementById(side + '-dot-label');
-  dot.className = 'peer-dot ' + state;
-  lbl.textContent = label;
-}
-
-function generateUID() {
-  return 'fmx-' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
-}
-
-/* ═══════════════════════════════════════════
-   ENCRYPTION HELPERS (AES-256-GCM)
-═══════════════════════════════════════════ */
-let cryptoKey = null;
-let rawKeyBytes = null;
-
-async function generateKey() {
-  cryptoKey = await crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true, ['encrypt', 'decrypt']
-  );
-  const exported = await crypto.subtle.exportKey('raw', cryptoKey);
-  rawKeyBytes = Array.from(new Uint8Array(exported))
-    .map(b => b.toString(16).padStart(2, '0')).join('');
-  return rawKeyBytes;
-}
-
-async function importKey(hexKey) {
-  const bytes = new Uint8Array(hexKey.match(/.{2}/g).map(b => parseInt(b, 16)));
-  cryptoKey = await crypto.subtle.importKey(
-    'raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']
-  );
-}
-
-async function encryptChunk(data) {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, data);
-  const out = new Uint8Array(12 + enc.byteLength);
-  out.set(iv, 0);
-  out.set(new Uint8Array(enc), 12);
-  return out.buffer;
-}
-
-async function decryptChunk(data) {
-  const arr = new Uint8Array(data);
-  const iv = arr.slice(0, 12);
-  const enc = arr.slice(12);
-  return await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, cryptoKey, enc);
-}
-
-/* ═══════════════════════════════════════════
-   MAIN APP LOGIC
-═══════════════════════════════════════════ */
-const CHUNK_SIZE = 64 * 1024; // 64 KB chunks
-
-let selectedFiles = [];
-let senderPeer = null;
-let recvPeer = null;
-
-function initApp() {
-  // Check if URL contains a peer/key param (receiver mode auto-fill)
-  const hash = window.location.hash.substring(1);
-  if (hash && hash.startsWith('fmx')) {
-    const full = window.location.href;
-    document.getElementById('recv-url-input').value = full;
-    showToast('Share link detected — ready to receive!', 'success');
-  }
-
-  // Drop zone
-  const dz = document.getElementById('drop-zone');
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('drag-over');
-    addFiles(e.dataTransfer.files);
+/* ── SENDER ── */
+async function startSend(){
+  if(!selFiles.length)return;
+  const btn=document.getElementById('send-btn');
+  btn.disabled=true;btn.textContent='◌ INITIALIZING…';
+  pdot('s','conn','CONNECTING TO SIGNAL SERVER…');
+  sstat('smsg-s','Generating AES-256 key & registering peer…');hdiag('diag-s');
+  let kHex;try{kHex=await genKey()}catch(e){sstat('smsg-s','Crypto error: '+e.message,'err');btn.disabled=false;btn.textContent='◈ GENERATE SECURE LINK';return}
+  const pid=uid();
+  if(SP){try{SP.destroy()}catch(_){}}
+  let cto=setTimeout(()=>{if(SP&&!SP.destroyed)sdiag('diag-s','Signal server is slow. Still trying — this usually resolves within 20s.')},10000);
+  SP=new Peer(pid,PCFG);
+  SP.on('open',id=>{
+    clearTimeout(cto);
+    pdot('s','ready','READY — AWAITING RECEIVER');
+    const url=location.origin+location.pathname+'#'+id+'|'+kHex;
+    document.getElementById('url-disp').value=url;
+    document.getElementById('url-box').classList.add('on');
+    sstat('smsg-s','✓ Secure link ready! Share with recipient and wait for connection.');
+    btn.textContent='⏳ WAITING FOR RECEIVER…';
+    toast('Secure link generated!','ok');
   });
-
-  document.getElementById('file-input').addEventListener('change', e => {
-    addFiles(e.target.files);
+  SP.on('connection',conn=>{
+    pdot('s','conn','RECEIVER JOINED — OPENING CHANNEL…');
+    sstat('smsg-s','↔ Receiver connected! Opening secure channel…');
+    conn.on('open',()=>{pdot('s','ready','CONNECTED — TRANSFERRING');hdiag('diag-s');sendAll(conn)});
+    conn.on('error',e=>{sstat('smsg-s','Channel error: '+e.message,'err');pdot('s','err','ERROR')});
+    conn.on('close',()=>{if(document.getElementById('spct').textContent!=='100%'){sstat('smsg-s','Connection dropped. Transfer incomplete.','err');pdot('s','err','DISCONNECTED')}});
   });
-
-  document.getElementById('send-btn').addEventListener('click', startSending);
-  document.getElementById('recv-btn').addEventListener('click', startReceiving);
+  SP.on('disconnected',()=>{pdot('s','conn','RECONNECTING…');try{SP.reconnect()}catch(_){}});
+  SP.on('error',e=>{clearTimeout(cto);sstat('smsg-s',pEM(e),'err');sdiag('diag-s',pED(e));pdot('s','err','ERROR');btn.disabled=false;btn.textContent='◈ GENERATE SECURE LINK'});
 }
 
-function addFiles(files) {
-  for (const f of files) {
-    if (!selectedFiles.find(x => x.name === f.name && x.size === f.size)) {
-      selectedFiles.push(f);
-    }
-  }
-  renderFileList();
-  document.getElementById('send-btn').disabled = selectedFiles.length === 0;
-}
-
-function removeFile(idx) {
-  selectedFiles.splice(idx, 1);
-  renderFileList();
-  document.getElementById('send-btn').disabled = selectedFiles.length === 0;
-}
-
-function renderFileList() {
-  const list = document.getElementById('file-list');
-  list.innerHTML = '';
-  selectedFiles.forEach((f, i) => {
-    const el = document.createElement('div');
-    el.className = 'file-item';
-    el.innerHTML = `
-      <span class="fi-icon">${getFileIcon(f.name)}</span>
-      <div class="fi-info">
-        <div class="fi-name">${f.name}</div>
-        <div class="fi-size">${fmtBytes(f.size)}</div>
-      </div>
-      <button class="fi-remove" onclick="removeFile(${i})">✕</button>
-    `;
-    list.appendChild(el);
-  });
-}
-
-/* ── SENDER FLOW ── */
-async function startSending() {
-  if (selectedFiles.length === 0) return;
-  const btn = document.getElementById('send-btn');
-  btn.disabled = true;
-  btn.textContent = '◌ GENERATING…';
-
-  setPeerDot('send', 'connecting', 'CONNECTING...');
-  setStatus('send-status', 'Generating encryption key & peer ID...', 'info');
-
-  // Generate AES key
-  const keyHex = await generateKey();
-  const peerId = generateUID();
-
-  try {
-    senderPeer = new Peer(peerId, {
-      host: '0.peerjs.com', port: 443, path: '/',
-      secure: true, debug: 0,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:global.stun.twilio.com:3478?transport=udp' }
-        ]
-      }
-    });
-
-    senderPeer.on('open', id => {
-      setPeerDot('send', 'online', 'READY — WAITING FOR RECEIVER');
-      const shareURL = window.location.origin + window.location.pathname + '#' + id + '|' + keyHex;
-      document.getElementById('url-display').value = shareURL;
-      document.getElementById('url-box').classList.add('visible');
-      setStatus('send-status', '⬆ Link generated! Share it with recipient. Waiting for connection…', 'info');
-      btn.textContent = '⏳ WAITING FOR RECEIVER…';
-      showToast('Secure link generated!', 'success');
-    });
-
-    senderPeer.on('connection', conn => {
-      setPeerDot('send', 'connecting', 'RECEIVER CONNECTING...');
-      setStatus('send-status', '↔ Receiver connected! Starting transfer…');
-      conn.on('open', () => {
-        setPeerDot('send', 'online', 'CONNECTED — TRANSFERRING');
-        sendAllFiles(conn);
-      });
-      conn.on('error', err => {
-        setStatus('send-status', 'Connection error: ' + err.message, 'error');
-        setPeerDot('send', 'error', 'ERROR');
-      });
-    });
-
-    senderPeer.on('error', err => {
-      setStatus('send-status', 'Peer error: ' + err.type + ' — ' + err.message, 'error');
-      setPeerDot('send', 'error', 'ERROR');
-      btn.disabled = false;
-      btn.textContent = '◈ GENERATE SECURE LINK';
-    });
-
-  } catch (e) {
-    setStatus('send-status', 'Failed to initialize: ' + e.message, 'error');
-    btn.disabled = false;
-    btn.textContent = '◈ GENERATE SECURE LINK';
-  }
-}
-
-async function sendAllFiles(conn) {
-  const progSection = document.getElementById('send-progress');
-  progSection.classList.add('visible');
-
-  for (let fi = 0; fi < selectedFiles.length; fi++) {
-    const file = selectedFiles[fi];
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-
-    // Send file metadata
-    conn.send(JSON.stringify({
-      type: 'meta', name: file.name, size: file.size,
-      totalChunks, fileIndex: fi, totalFiles: selectedFiles.length
-    }));
-
-    await new Promise(r => setTimeout(r, 100));
-
-    let offset = 0; let chunkIdx = 0;
-    let startTime = Date.now(); let bytesSent = 0;
-
-    while (offset < file.size) {
-      const slice = file.slice(offset, offset + CHUNK_SIZE);
-      const buf = await slice.arrayBuffer();
-      const enc = await encryptChunk(buf);
-
-      // Wait if buffer is getting full
-      while (conn.dataChannel && conn.dataChannel.bufferedAmount > 2 * 1024 * 1024) {
-        await new Promise(r => setTimeout(r, 50));
-      }
-
+async function sendAll(conn){
+  const ps=document.getElementById('prog-s');ps.classList.add('on');
+  for(let fi=0;fi<selFiles.length;fi++){
+    const f=selFiles[fi];
+    document.getElementById('plbl-s').textContent=`TRANSMITTING [${fi+1}/${selFiles.length}]`;
+    document.getElementById('sfile').textContent=f.name.length>22?f.name.substr(0,20)+'…':f.name;
+    conn.send(JSON.stringify({t:'meta',n:f.name,s:f.size,fi,tf:selFiles.length}));
+    await delay(80);
+    let off=0,bs=0,t0=Date.now();
+    while(off<f.size){
+      const sl=f.slice(off,off+CHUNK);
+      const buf=await sl.arrayBuffer();
+      const enc=await encC(buf);
+      await wBuf(conn,1.5*1024*1024);
       conn.send(enc);
-
-      offset += buf.byteLength;
-      bytesSent += buf.byteLength;
-      chunkIdx++;
-
-      const pct = Math.round((offset / file.size) * 100);
-      const elapsed = (Date.now() - startTime) / 1000;
-      const speed = elapsed > 0 ? fmtBytes(bytesSent / elapsed) + '/s' : '—';
-
-      document.getElementById('send-bar').style.width = pct + '%';
-      document.getElementById('send-pct').textContent = pct + '%';
-      document.getElementById('send-sent').textContent = fmtBytes(offset);
-      document.getElementById('send-total').textContent = fmtBytes(file.size);
-      document.getElementById('send-speed').textContent = speed;
+      off+=buf.byteLength;bs+=buf.byteLength;
+      const pct=Math.min(100,Math.round(off/f.size*100));
+      const el=(Date.now()-t0)/1000;
+      document.getElementById('sbar').style.width=pct+'%';
+      document.getElementById('spct').textContent=pct+'%';
+      document.getElementById('ssent').textContent=fmtB(off);
+      document.getElementById('stotal').textContent=fmtB(f.size);
+      document.getElementById('sspd').textContent=el>0?fmtB(bs/el)+'/s':'—';
     }
-
-    // EOF signal
-    conn.send(JSON.stringify({ type: 'eof', fileIndex: fi }));
-    setStatus('send-status', `✓ File ${fi + 1}/${selectedFiles.length} sent: ${file.name}`);
+    conn.send(JSON.stringify({t:'eof',fi}));
+    sstat('smsg-s',`✓ Sent (${fi+1}/${selFiles.length}): ${f.name}`,'ok');
+    await delay(100);
   }
-
-  conn.send(JSON.stringify({ type: 'done' }));
-  setPeerDot('send', 'online', 'ALL FILES SENT');
-  setStatus('send-status', '✓ All files transmitted successfully!', 'success');
-  document.getElementById('send-bar').style.width = '100%';
-  document.getElementById('send-pct').textContent = '100%';
-  showToast('All files sent!', 'success');
+  conn.send(JSON.stringify({t:'done'}));
+  pdot('s','done','ALL FILES SENT ✓');
+  document.getElementById('send-btn').textContent='✓ TRANSFER COMPLETE';
+  toast('All files sent!','ok');
 }
 
-/* ── RECEIVER FLOW ── */
-async function startReceiving() {
-  const input = document.getElementById('recv-url-input').value.trim();
-  if (!input) { showToast('Please paste a share link', 'error'); return; }
+const wBuf=async(conn,max)=>new Promise(res=>{const c=()=>{try{if(!conn.dataChannel||conn.dataChannel.bufferedAmount<=max)return res()}catch(_){return res()}setTimeout(c,50)};c()});
 
-  let peerID, keyHex;
-  try {
-    const hash = input.includes('#') ? input.split('#')[1] : input;
-    const parts = hash.split('|');
-    peerID = parts[0]; keyHex = parts[1];
-    if (!peerID || !keyHex) throw new Error('Invalid link format');
-  } catch (e) {
-    setStatus('recv-status', 'Invalid share link format. Please check and try again.', 'error');
-    return;
-  }
-
-  await importKey(keyHex);
-
-  const btn = document.getElementById('recv-btn');
-  btn.disabled = true;
-  btn.textContent = '◌ CONNECTING…';
-  setPeerDot('recv', 'connecting', 'CONNECTING...');
-  setStatus('recv-status', 'Connecting to sender...', 'info');
-
-  try {
-    recvPeer = new Peer({
-      host: '0.peerjs.com', port: 443, path: '/',
-      secure: true, debug: 0,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:global.stun.twilio.com:3478?transport=udp' }
-        ]
-      }
-    });
-
-    recvPeer.on('open', () => {
-      const conn = recvPeer.connect(peerID, { reliable: true });
-      conn.on('open', () => {
-        setPeerDot('recv', 'online', 'CONNECTED — RECEIVING');
-        setStatus('recv-status', '↔ Connected! Receiving files…');
-        btn.textContent = '◉ RECEIVING…';
-        receiveFiles(conn);
-      });
-      conn.on('error', err => {
-        setStatus('recv-status', 'Connection error: ' + err.message, 'error');
-        setPeerDot('recv', 'error', 'ERROR');
-        btn.disabled = false; btn.textContent = '◈ CONNECT & RECEIVE';
-      });
-    });
-
-    recvPeer.on('error', err => {
-      setStatus('recv-status', 'Could not connect: ' + err.type + '. Sender may be offline.', 'error');
-      setPeerDot('recv', 'error', 'ERROR');
-      btn.disabled = false; btn.textContent = '◈ CONNECT & RECEIVE';
-    });
-
-  } catch (e) {
-    setStatus('recv-status', 'Failed: ' + e.message, 'error');
-    btn.disabled = false; btn.textContent = '◈ CONNECT & RECEIVE';
-  }
+/* ── RECEIVER ── */
+async function startRecv(isRetry=false){
+  const raw=document.getElementById('rinp').value.trim();
+  if(!raw){toast('Paste the share link first','err');return}
+  let pid,kHex;
+  try{
+    const hash=raw.includes('#')?raw.split('#')[1]:raw;
+    const parts=hash.split('|');
+    if(parts.length<2)throw new Error('Missing key — copy the full URL');
+    pid=parts[0].trim();kHex=parts[1].trim();
+    if(!pid||!kHex||kHex.length!==64)throw new Error('Invalid link — key must be 64 hex chars');
+  }catch(e){sstat('smsg-r','Link error: '+e.message+'. Copy the complete URL from sender.','err');return}
+  try{await impKey(kHex)}catch(e){sstat('smsg-r','Key import error: '+e.message,'err');return}
+  const rbtn=document.getElementById('recv-btn'),rtbtn=document.getElementById('retry-btn');
+  rbtn.disabled=true;rbtn.textContent='◌ CONNECTING…';rtbtn.style.display='none';
+  pdot('r','conn','CONNECTING TO SIGNAL SERVER…');
+  sstat('smsg-r','Connecting to signal server…');hdiag('diag-r');
+  if(RP){try{RP.destroy()}catch(_){}}
+  let opened=false;
+  const slow=setTimeout(()=>{if(!opened){sstat('smsg-r','⚠ Slow signal server — still trying…','warn');sdiag('diag-r','Connection is taking longer than usual. This is normal on first use. Make sure the sender\'s page is still open.')}},9000);
+  const hard=setTimeout(()=>{if(!opened){sstat('smsg-r','Timed out. Sender may be offline or link expired.','err');sdiag('diag-r','<b>Checklist:</b><br>① Sender keeps their tab open<br>② Copy the FULL link (it ends with a long key after |)<br>③ Try on Chrome or Firefox — best WebRTC support<br>④ Both sides refresh and generate a new link<br>⑤ If on same device: open sender in one tab, receiver in another');pdot('r','err','TIMEOUT');rbtn.disabled=false;rbtn.textContent='◈ CONNECT & RECEIVE';rtbtn.style.display='flex'}},30000);
+  RP=new Peer(PCFG);
+  RP.on('open',()=>{
+    clearTimeout(slow);
+    pdot('r','conn','REACHING SENDER PEER…');
+    sstat('smsg-r','Signal OK — dialing sender peer…');
+    const conn=RP.connect(pid,{reliable:true,serialization:'binary'});
+    conn.on('open',()=>{clearTimeout(hard);opened=true;pdot('r','ready','CONNECTED — RECEIVING');sstat('smsg-r','↔ Secure channel open! Receiving files…');rbtn.textContent='◉ RECEIVING…';hdiag('diag-r');handleRecv(conn)});
+    conn.on('error',e=>{clearTimeout(hard);sstat('smsg-r','Channel error: '+e.message,'err');pdot('r','err','ERROR');rbtn.disabled=false;rbtn.textContent='◈ CONNECT & RECEIVE';rtbtn.style.display='flex'});
+    conn.on('close',()=>{clearTimeout(hard);if(opened&&document.getElementById('rpct').textContent!=='100%'){sstat('smsg-r','Connection closed early. Try again.','err');pdot('r','err','DISCONNECTED')}});
+  });
+  RP.on('disconnected',()=>{if(!opened){pdot('r','conn','RECONNECTING…');try{RP.reconnect()}catch(_){}}});
+  RP.on('error',e=>{clearTimeout(slow);clearTimeout(hard);sstat('smsg-r',pEM(e),'err');sdiag('diag-r',pED(e));pdot('r','err','ERROR');rbtn.disabled=false;rbtn.textContent='◈ CONNECT & RECEIVE';rtbtn.style.display='flex'});
 }
 
-function receiveFiles(conn) {
-  const progSection = document.getElementById('recv-progress');
-  progSection.classList.add('visible');
-
-  let currentMeta = null;
-  let chunks = [];
-  let receivedBytes = 0;
-  let startTime = null;
-
-  conn.on('data', async (data) => {
-    if (typeof data === 'string') {
-      const msg = JSON.parse(data);
-
-      if (msg.type === 'meta') {
-        currentMeta = msg;
-        chunks = []; receivedBytes = 0;
-        startTime = Date.now();
-        setStatus('recv-status', `↓ Receiving (${msg.fileIndex + 1}/${msg.totalFiles}): ${msg.name}`);
-        document.getElementById('recv-total').textContent = fmtBytes(msg.size);
-      }
-
-      if (msg.type === 'eof' && currentMeta) {
-        const allChunks = new Uint8Array(chunks.reduce((a, c) => a + c.byteLength, 0));
-        let offset = 0;
-        for (const chunk of chunks) {
-          allChunks.set(new Uint8Array(chunk), offset);
-          offset += chunk.byteLength;
-        }
-        const blob = new Blob([allChunks]);
-        renderDownload(currentMeta.name, blob, currentMeta.size);
-        setStatus('recv-status', `✓ Received: ${currentMeta.name}`, 'success');
-        chunks = [];
-      }
-
-      if (msg.type === 'done') {
-        setPeerDot('recv', 'online', 'TRANSFER COMPLETE');
-        setStatus('recv-status', '✓ All files received!', 'success');
-        document.getElementById('recv-bar').style.width = '100%';
-        document.getElementById('recv-pct').textContent = '100%';
-        showToast('All files received!', 'success');
-      }
-
-    } else {
-      // Binary chunk — decrypt
-      if (!currentMeta) return;
-      try {
-        const dec = await decryptChunk(data);
-        chunks.push(dec);
-        receivedBytes += dec.byteLength;
-
-        const pct = Math.min(100, Math.round((receivedBytes / currentMeta.size) * 100));
-        const elapsed = (Date.now() - startTime) / 1000;
-        const speed = elapsed > 0 ? fmtBytes(receivedBytes / elapsed) + '/s' : '—';
-
-        document.getElementById('recv-bar').style.width = pct + '%';
-        document.getElementById('recv-pct').textContent = pct + '%';
-        document.getElementById('recv-rcvd').textContent = fmtBytes(receivedBytes);
-        document.getElementById('recv-speed').textContent = speed;
-      } catch (e) {
-        setStatus('recv-status', 'Decryption error — key mismatch?', 'error');
-      }
+function handleRecv(conn){
+  const ps=document.getElementById('prog-r');ps.classList.add('on');
+  let meta=null,chunks=[],rb=0,t0=null;
+  conn.on('data',async data=>{
+    if(typeof data==='string'){
+      const m=JSON.parse(data);
+      if(m.t==='meta'){meta=m;chunks=[];rb=0;t0=Date.now();document.getElementById('plbl-r').textContent=`RECEIVING [${m.fi+1}/${m.tf}]`;document.getElementById('rfile').textContent=m.n.length>22?m.n.substr(0,20)+'…':m.n;document.getElementById('rtotal').textContent=fmtB(m.s);sstat('smsg-r',`↓ Receiving (${m.fi+1}/${m.tf}): ${m.n}`)}
+      if(m.t==='eof'&&meta){try{const tot=chunks.reduce((a,c)=>a+c.byteLength,0);const combined=new Uint8Array(tot);let off=0;for(const c of chunks){combined.set(new Uint8Array(c),off);off+=c.byteLength}addDL(meta.n,new Blob([combined]),meta.s);sstat('smsg-r',`✓ File ready: ${meta.n}`,'ok');toast('File ready: '+meta.n,'ok');chunks=[]}catch(e){sstat('smsg-r','Assembly error: '+e.message,'err')}}
+      if(m.t==='done'){pdot('r','done','ALL FILES RECEIVED ✓');document.getElementById('rbar').style.width='100%';document.getElementById('rpct').textContent='100%';sstat('smsg-r','✓ All files received!','ok');toast('Transfer complete!','ok');document.getElementById('recv-btn').textContent='✓ COMPLETE'}
+    }else{
+      if(!meta)return;
+      try{const dec=await decC(data);chunks.push(dec);rb+=dec.byteLength;const pct=Math.min(100,Math.round(rb/meta.s*100));const el=(Date.now()-t0)/1000;document.getElementById('rbar').style.width=pct+'%';document.getElementById('rpct').textContent=pct+'%';document.getElementById('rrcvd').textContent=fmtB(rb);document.getElementById('rspd').textContent=el>0?fmtB(rb/el)+'/s':'—'}
+      catch(e){sstat('smsg-r','Decrypt error — key mismatch?','err')}
     }
   });
 }
 
-function renderDownload(name, blob, size) {
-  const dlArea = document.getElementById('dl-area');
-  dlArea.classList.add('visible');
-  const url = URL.createObjectURL(blob);
-  const card = document.createElement('div');
-  card.innerHTML = `
-    <div class="dl-file-card">
-      <div class="dl-file-icon">${getFileIcon(name)}</div>
-      <div class="dl-file-info">
-        <div class="dl-file-name">${name}</div>
-        <div class="dl-file-size">${fmtBytes(size)} · Decrypted ✓</div>
-      </div>
-    </div>
-    <a href="${url}" download="${name}" style="text-decoration:none;">
-      <button class="btn btn-success">⬇ DOWNLOAD ${name}</button>
-    </a>
-  `;
-  dlArea.appendChild(card);
+function addDL(name,blob,size){
+  const a=document.getElementById('dl-area');a.classList.add('on');
+  const url=URL.createObjectURL(blob);
+  const w=document.createElement('div');
+  w.innerHTML=`<div class="dl-card"><div class="dl-ico">${fIco(name)}</div><div class="dl-info"><div class="dl-name">${name}</div><div class="dl-sz">${fmtB(size)} · AES-256-GCM Decrypted ✓</div></div></div><a href="${url}" download="${name}" style="text-decoration:none"><button class="btn btn-suc">⬇ DOWNLOAD ${name}</button></a>`;
+  a.appendChild(w);
 }
 
-function copyURL() {
-  const val = document.getElementById('url-display').value;
-  navigator.clipboard.writeText(val).then(() => {
-    const btn = document.getElementById('copy-btn');
-    btn.textContent = 'COPIED!';
-    btn.classList.add('copied');
-    showToast('Link copied to clipboard!', 'success');
-    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
-  }).catch(() => {
-    document.getElementById('url-display').select();
-    document.execCommand('copy');
-    showToast('Link copied!', 'success');
-  });
-}
+function copyURL(){const v=document.getElementById('url-disp').value;const b=document.getElementById('cp-btn');navigator.clipboard.writeText(v).then(()=>{b.textContent='COPIED!';b.classList.add('copied');toast('Link copied!','ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('copied')},2000)}).catch(()=>{document.getElementById('url-disp').select();document.execCommand('copy');toast('Copied!','ok')})}
+
+/* ── ERROR MSGS ── */
+function pEM(e){const t=e.type||'';if(t==='peer-unavailable')return'Sender not found. Their tab may have closed or link expired.';if(t==='network')return'Network error. Check your connection.';if(t==='server-error')return'Signal server error. Wait 30s and retry.';if(t==='socket-error'||t==='socket-closed')return'Socket error — firewall may block WebRTC (TURN should bypass this).';return`Error [${t}]: ${e.message||'Unknown'}`}
+function pED(e){const t=e.type||'';if(t==='peer-unavailable')return'<b>Fix:</b> Sender must keep their page open. Generate a fresh link.';if(t==='network'||t==='socket-error')return'<b>Fix:</b> Corporate firewalls often block WebRTC. TURN relay enabled. Try mobile hotspot if issue persists.';if(t==='server-error')return'<b>Fix:</b> PeerJS signal server temporarily down. Wait 30s and retry.';return'<b>Tip:</b> Use Chrome or Firefox. Both sides refresh and generate a new link.'}
 </script>
 </body>
 </html>
