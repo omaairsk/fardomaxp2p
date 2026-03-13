@@ -51,6 +51,25 @@ header::after{content:'';position:absolute;bottom:-1px;left:8%;right:8%;height:1
 .hbadge{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:2px;background:var(--panel);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);white-space:nowrap}
 .hbadge .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan2);box-shadow:0 0 6px var(--cyan2);animation:blink 2s ease-in-out infinite;flex-shrink:0}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+/* SOUND TOGGLE */
+.snd-btn{display:flex;align-items:center;gap:7px;padding:7px 14px;border:1px solid var(--border);border-radius:2px;background:var(--panel);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);cursor:pointer;transition:all .25s;white-space:nowrap;flex-shrink:0}
+.snd-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.snd-btn.muted{border-color:rgba(255,45,85,0.4);color:rgba(255,45,85,0.6)}
+.snd-btn .sico{font-size:14px;transition:transform .2s}
+.snd-btn:hover .sico{transform:scale(1.2)}
+/* SOUND VISUALIZER BAR */
+.snd-viz{display:flex;align-items:flex-end;gap:2px;height:20px;width:32px}
+.snd-viz span{width:4px;background:var(--cyan2);border-radius:1px;transition:height .1s;opacity:.7}
+.snd-viz.active span:nth-child(1){animation:vbar1 .5s ease-in-out infinite}
+.snd-viz.active span:nth-child(2){animation:vbar2 .5s ease-in-out infinite .08s}
+.snd-viz.active span:nth-child(3){animation:vbar3 .5s ease-in-out infinite .16s}
+.snd-viz.active span:nth-child(4){animation:vbar4 .5s ease-in-out infinite .04s}
+.snd-viz.active span:nth-child(5){animation:vbar5 .5s ease-in-out infinite .12s}
+@keyframes vbar1{0%,100%{height:4px}50%{height:14px}}
+@keyframes vbar2{0%,100%{height:8px}50%{height:18px}}
+@keyframes vbar3{0%,100%{height:12px}50%{height:6px}}
+@keyframes vbar4{0%,100%{height:6px}50%{height:16px}}
+@keyframes vbar5{0%,100%{height:10px}50%{height:4px}}
 /* MAIN */
 main{flex:1;display:flex;flex-direction:column;align-items:center;padding:50px 30px 60px;gap:40px}
 .hero-text{text-align:center;max-width:680px}
@@ -212,6 +231,15 @@ footer{padding:22px 40px;border-top:1px solid var(--border);display:flex;justify
     <div class="hbadge">⚡ DIRECT P2P</div>
     <div class="hbadge">∞ NO LIMIT</div>
     <div class="hbadge">🌍 WORLDWIDE</div>
+    <button class="snd-btn" id="snd-btn" onclick="toggleSound()">
+      <span class="sico" id="snd-ico">🔊</span>
+      <div class="snd-viz" id="snd-viz">
+        <span style="height:8px"></span><span style="height:14px"></span>
+        <span style="height:6px"></span><span style="height:12px"></span>
+        <span style="height:10px"></span>
+      </div>
+      <span id="snd-lbl">SOUND ON</span>
+    </button>
   </div>
 </header>
 
@@ -296,7 +324,7 @@ footer{padding:22px 40px;border-top:1px solid var(--border);display:flex;justify
 
 <footer>
   <div class="finfo">Fardomax Secure Transmit © 2025 · WebRTC P2P · AES-256-GCM · TURN Relay</div>
-  <div class="flinks"><a href="#">Privacy</a><a href="#">Security</a><a href="#">How It Works</a></div>
+  <div class="flinks"><a href="fardomax-privacy.html">Privacy</a><a href="fardomax-security.html">Security</a><a href="fardomax-how-it-works.html">How It Works</a></div>
 </footer>
 </div>
 
@@ -337,6 +365,201 @@ const pdot=(s,c,l)=>{document.getElementById(s+'dot').className='pdot '+c;docume
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 const uid=()=>'fmx-'+Date.now().toString(36)+Math.random().toString(36).substr(2,6);
 function toast(msg,cls='',dur=3500){const el=document.createElement('div');el.className='toast '+cls;el.textContent=({'ok':'✓ ','err':'✗ ','warn':'⚠ '}[cls]||'ℹ ')+msg;document.body.appendChild(el);setTimeout(()=>{el.style.animation='toastin .4s ease reverse';setTimeout(()=>el.remove(),420)},dur)}
+
+/* ══════════════════════════════════
+   SOUND ENGINE — Web Audio API
+   All sounds synthesized — no files
+══════════════════════════════════ */
+let AC=null, soundEnabled=true;
+let txTickInterval=null, txTickCounter=0;
+
+function getAC(){
+  if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+  if(AC.state==='suspended') AC.resume();
+  return AC;
+}
+
+function toggleSound(){
+  soundEnabled=!soundEnabled;
+  const btn=document.getElementById('snd-btn');
+  const ico=document.getElementById('snd-ico');
+  const lbl=document.getElementById('snd-lbl');
+  const viz=document.getElementById('snd-viz');
+  if(soundEnabled){
+    btn.classList.remove('muted');
+    ico.textContent='🔊';lbl.textContent='SOUND ON';
+    viz.style.opacity='1';
+    playSound('copy');
+  } else {
+    btn.classList.add('muted');
+    ico.textContent='🔇';lbl.textContent='MUTED';
+    viz.style.opacity='.25';
+    stopTxTick();
+  }
+}
+
+function setVizActive(on){
+  const v=document.getElementById('snd-viz');
+  if(on) v.classList.add('active'); else v.classList.remove('active');
+}
+
+// ── master gain + tiny reverb ──
+function mkGain(vol=0.18){
+  const ac=getAC(), g=ac.createGain();
+  g.gain.value=vol;
+  g.connect(ac.destination);
+  return g;
+}
+
+// ── envelope ──
+function env(node,ac,atk,sus,rel,vol=0.18){
+  const now=ac.currentTime;
+  node.gain.setValueAtTime(0,now);
+  node.gain.linearRampToValueAtTime(vol,now+atk);
+  node.gain.setValueAtTime(vol,now+atk+sus);
+  node.gain.exponentialRampToValueAtTime(0.0001,now+atk+sus+rel);
+  return now+atk+sus+rel;
+}
+
+// ── play one oscillator note ──
+function note(freq,type,atk,sus,rel,vol,startDelay=0,detune=0){
+  const ac=getAC();
+  const osc=ac.createOscillator();
+  const g=ac.createGain();
+  osc.type=type; osc.frequency.value=freq; osc.detune.value=detune;
+  osc.connect(g); g.connect(ac.destination);
+  const t=ac.currentTime+startDelay;
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(vol,t+atk);
+  g.gain.setValueAtTime(vol,t+atk+sus);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+atk+sus+rel);
+  osc.start(t); osc.stop(t+atk+sus+rel+0.05);
+}
+
+// ── noise burst ──
+function noise(dur,vol,startDelay=0){
+  const ac=getAC();
+  const buf=ac.createBuffer(1,ac.sampleRate*dur,ac.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const src=ac.createBufferSource();
+  src.buffer=buf;
+  const filt=ac.createBiquadFilter();
+  filt.type='bandpass'; filt.frequency.value=3000; filt.Q.value=0.5;
+  const g=ac.createGain();
+  src.connect(filt); filt.connect(g); g.connect(ac.destination);
+  const t=ac.currentTime+startDelay;
+  g.gain.setValueAtTime(vol,t);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  src.start(t); src.stop(t+dur+0.01);
+}
+
+function playSound(name){
+  if(!soundEnabled) return;
+  try{
+    switch(name){
+
+      // File dropped into drop zone — subtle thud + rising sweep
+      case 'drop':
+        noise(0.06,0.12);
+        note(120,'sine',0.01,0.02,0.15,0.12);
+        note(380,'sine',0.01,0.01,0.12,0.07,0.03);
+        note(600,'triangle',0.005,0.01,0.1,0.05,0.06);
+        break;
+
+      // Secure link generated — rising 3-note arpeggio
+      case 'generate':
+        note(440,'sine',0.01,0.05,0.25,0.14);
+        note(554,'sine',0.01,0.05,0.25,0.12,0.1);
+        note(659,'sine',0.01,0.06,0.35,0.14,0.2);
+        note(880,'sine',0.005,0.04,0.4,0.08,0.32);
+        break;
+
+      // Peer connected — digital handshake sweep
+      case 'connect':
+        note(300,'sawtooth',0.005,0.03,0.08,0.06);
+        note(600,'sawtooth',0.005,0.03,0.08,0.06,0.05);
+        note(900,'sine',0.01,0.05,0.3,0.12,0.1);
+        note(1200,'sine',0.005,0.03,0.25,0.08,0.18);
+        break;
+
+      // Data chunk tick — tiny high-frequency blip (plays periodically during TX)
+      case 'tick':
+        note(1800+(Math.random()*400-200),'square',0.002,0.004,0.02,0.032);
+        break;
+
+      // Alternate tick for receive side
+      case 'rtick':
+        note(1400+(Math.random()*300-150),'sine',0.002,0.005,0.025,0.028);
+        break;
+
+      // Single file sent — bright ping
+      case 'filesent':
+        note(880,'sine',0.005,0.03,0.3,0.12);
+        note(1108,'sine',0.005,0.02,0.28,0.08,0.06);
+        break;
+
+      // Single file received/ready — mellow chime
+      case 'filercvd':
+        note(740,'sine',0.005,0.04,0.45,0.14);
+        note(932,'sine',0.005,0.03,0.4,0.1,0.08);
+        note(1109,'sine',0.003,0.02,0.38,0.07,0.14);
+        break;
+
+      // ALL files transferred complete — full success fanfare
+      case 'complete':
+        note(523,'sine',0.01,0.06,0.2,0.12);
+        note(659,'sine',0.01,0.06,0.2,0.12,0.1);
+        note(784,'sine',0.01,0.07,0.2,0.14,0.2);
+        note(1046,'sine',0.01,0.1,0.5,0.18,0.32);
+        note(784,'sine',0.005,0.04,0.3,0.08,0.36);
+        note(1319,'sine',0.005,0.06,0.6,0.1,0.45);
+        break;
+
+      // Download button clicked — satisfying click + down sweep
+      case 'download':
+        noise(0.04,0.1);
+        note(600,'sine',0.005,0.02,0.12,0.1);
+        note(400,'sine',0.005,0.03,0.18,0.1,0.04);
+        note(260,'sine',0.005,0.02,0.22,0.07,0.08);
+        break;
+
+      // URL copied — double beep
+      case 'copy':
+        note(1000,'square',0.003,0.015,0.07,0.06);
+        note(1200,'square',0.003,0.015,0.07,0.06,0.1);
+        break;
+
+      // Error — descending buzz
+      case 'error':
+        note(300,'sawtooth',0.01,0.05,0.1,0.1);
+        note(220,'sawtooth',0.005,0.05,0.12,0.1,0.1);
+        note(160,'sawtooth',0.005,0.06,0.2,0.12,0.2);
+        break;
+
+      // UI click generic
+      case 'click':
+        noise(0.025,0.06);
+        note(800,'square',0.002,0.005,0.04,0.05);
+        break;
+    }
+  }catch(_){}
+}
+
+// ── Periodic tick during active transmit ──
+function startTxTick(side='s'){
+  stopTxTick();
+  txTickCounter=0;
+  txTickInterval=setInterval(()=>{
+    txTickCounter++;
+    if(txTickCounter%2===0) playSound(side==='s'?'tick':'rtick');
+    setVizActive(true);
+  },120);
+}
+function stopTxTick(){
+  if(txTickInterval){clearInterval(txTickInterval);txTickInterval=null;}
+  setVizActive(false);
+}
 
 /* ── AES-256-GCM ── */
 let CK=null;
@@ -382,7 +605,12 @@ function initApp(){
   document.getElementById('retry-btn').addEventListener('click',()=>{document.getElementById('retry-btn').style.display='none';startRecv(true)});
 }
 
-function addFiles(files){for(const f of files)if(!selFiles.find(x=>x.name===f.name&&x.size===f.size))selFiles.push(f);renderFiles();document.getElementById('send-btn').disabled=!selFiles.length}
+function addFiles(files){
+  const prev=selFiles.length;
+  for(const f of files)if(!selFiles.find(x=>x.name===f.name&&x.size===f.size))selFiles.push(f);
+  if(selFiles.length>prev) playSound('drop');
+  renderFiles();document.getElementById('send-btn').disabled=!selFiles.length
+}
 window.rmFile=i=>{selFiles.splice(i,1);renderFiles();document.getElementById('send-btn').disabled=!selFiles.length};
 function renderFiles(){const ul=document.getElementById('flist');ul.innerHTML='';selFiles.forEach((f,i)=>{const el=document.createElement('div');el.className='fi';el.innerHTML=`<span class="fi-ico">${fIco(f.name)}</span><div class="fi-info"><div class="fi-name">${f.name}</div><div class="fi-sz">${fmtB(f.size)}</div></div><button class="fi-rm" onclick="rmFile(${i})">✕</button>`;ul.appendChild(el)})}
 
@@ -406,21 +634,23 @@ async function startSend(){
     document.getElementById('url-box').classList.add('on');
     sstat('smsg-s','✓ Secure link ready! Share with recipient and wait for connection.');
     btn.textContent='⏳ WAITING FOR RECEIVER…';
+    playSound('generate');
     toast('Secure link generated!','ok');
   });
   SP.on('connection',conn=>{
     pdot('s','conn','RECEIVER JOINED — OPENING CHANNEL…');
     sstat('smsg-s','↔ Receiver connected! Opening secure channel…');
-    conn.on('open',()=>{pdot('s','ready','CONNECTED — TRANSFERRING');hdiag('diag-s');sendAll(conn)});
-    conn.on('error',e=>{sstat('smsg-s','Channel error: '+e.message,'err');pdot('s','err','ERROR')});
-    conn.on('close',()=>{if(document.getElementById('spct').textContent!=='100%'){sstat('smsg-s','Connection dropped. Transfer incomplete.','err');pdot('s','err','DISCONNECTED')}});
+    conn.on('open',()=>{pdot('s','ready','CONNECTED — TRANSFERRING');hdiag('diag-s');playSound('connect');sendAll(conn)});
+    conn.on('error',e=>{playSound('error');sstat('smsg-s','Channel error: '+e.message,'err');pdot('s','err','ERROR')});
+    conn.on('close',()=>{if(document.getElementById('spct').textContent!=='100%'){stopTxTick();playSound('error');sstat('smsg-s','Connection dropped. Transfer incomplete.','err');pdot('s','err','DISCONNECTED')}});
   });
   SP.on('disconnected',()=>{pdot('s','conn','RECONNECTING…');try{SP.reconnect()}catch(_){}});
-  SP.on('error',e=>{clearTimeout(cto);sstat('smsg-s',pEM(e),'err');sdiag('diag-s',pED(e));pdot('s','err','ERROR');btn.disabled=false;btn.textContent='◈ GENERATE SECURE LINK'});
+  SP.on('error',e=>{clearTimeout(cto);playSound('error');sstat('smsg-s',pEM(e),'err');sdiag('diag-s',pED(e));pdot('s','err','ERROR');btn.disabled=false;btn.textContent='◈ GENERATE SECURE LINK'});
 }
 
 async function sendAll(conn){
   const ps=document.getElementById('prog-s');ps.classList.add('on');
+  startTxTick('s');
   for(let fi=0;fi<selFiles.length;fi++){
     const f=selFiles[fi];
     document.getElementById('plbl-s').textContent=`TRANSMITTING [${fi+1}/${selFiles.length}]`;
@@ -444,10 +674,13 @@ async function sendAll(conn){
       document.getElementById('sspd').textContent=el>0?fmtB(bs/el)+'/s':'—';
     }
     conn.send(JSON.stringify({t:'eof',fi}));
+    playSound('filesent');
     sstat('smsg-s',`✓ Sent (${fi+1}/${selFiles.length}): ${f.name}`,'ok');
     await delay(100);
   }
   conn.send(JSON.stringify({t:'done'}));
+  stopTxTick();
+  playSound('complete');
   pdot('s','done','ALL FILES SENT ✓');
   document.getElementById('send-btn').textContent='✓ TRANSFER COMPLETE';
   toast('All files sent!','ok');
@@ -482,27 +715,28 @@ async function startRecv(isRetry=false){
     pdot('r','conn','REACHING SENDER PEER…');
     sstat('smsg-r','Signal OK — dialing sender peer…');
     const conn=RP.connect(pid,{reliable:true,serialization:'binary'});
-    conn.on('open',()=>{clearTimeout(hard);opened=true;pdot('r','ready','CONNECTED — RECEIVING');sstat('smsg-r','↔ Secure channel open! Receiving files…');rbtn.textContent='◉ RECEIVING…';hdiag('diag-r');handleRecv(conn)});
-    conn.on('error',e=>{clearTimeout(hard);sstat('smsg-r','Channel error: '+e.message,'err');pdot('r','err','ERROR');rbtn.disabled=false;rbtn.textContent='◈ CONNECT & RECEIVE';rtbtn.style.display='flex'});
-    conn.on('close',()=>{clearTimeout(hard);if(opened&&document.getElementById('rpct').textContent!=='100%'){sstat('smsg-r','Connection closed early. Try again.','err');pdot('r','err','DISCONNECTED')}});
+    conn.on('open',()=>{clearTimeout(hard);opened=true;pdot('r','ready','CONNECTED — RECEIVING');sstat('smsg-r','↔ Secure channel open! Receiving files…');rbtn.textContent='◉ RECEIVING…';hdiag('diag-r');playSound('connect');handleRecv(conn)});
+    conn.on('error',e=>{clearTimeout(hard);playSound('error');sstat('smsg-r','Channel error: '+e.message,'err');pdot('r','err','ERROR');rbtn.disabled=false;rbtn.textContent='◈ CONNECT & RECEIVE';rtbtn.style.display='flex'});
+    conn.on('close',()=>{clearTimeout(hard);if(opened&&document.getElementById('rpct').textContent!=='100%'){stopTxTick();playSound('error');sstat('smsg-r','Connection closed early. Try again.','err');pdot('r','err','DISCONNECTED')}});
   });
   RP.on('disconnected',()=>{if(!opened){pdot('r','conn','RECONNECTING…');try{RP.reconnect()}catch(_){}}});
-  RP.on('error',e=>{clearTimeout(slow);clearTimeout(hard);sstat('smsg-r',pEM(e),'err');sdiag('diag-r',pED(e));pdot('r','err','ERROR');rbtn.disabled=false;rbtn.textContent='◈ CONNECT & RECEIVE';rtbtn.style.display='flex'});
+  RP.on('error',e=>{clearTimeout(slow);clearTimeout(hard);playSound('error');sstat('smsg-r',pEM(e),'err');sdiag('diag-r',pED(e));pdot('r','err','ERROR');rbtn.disabled=false;rbtn.textContent='◈ CONNECT & RECEIVE';rtbtn.style.display='flex'});
 }
 
 function handleRecv(conn){
   const ps=document.getElementById('prog-r');ps.classList.add('on');
   let meta=null,chunks=[],rb=0,t0=null;
+  startTxTick('r');
   conn.on('data',async data=>{
     if(typeof data==='string'){
       const m=JSON.parse(data);
       if(m.t==='meta'){meta=m;chunks=[];rb=0;t0=Date.now();document.getElementById('plbl-r').textContent=`RECEIVING [${m.fi+1}/${m.tf}]`;document.getElementById('rfile').textContent=m.n.length>22?m.n.substr(0,20)+'…':m.n;document.getElementById('rtotal').textContent=fmtB(m.s);sstat('smsg-r',`↓ Receiving (${m.fi+1}/${m.tf}): ${m.n}`)}
-      if(m.t==='eof'&&meta){try{const tot=chunks.reduce((a,c)=>a+c.byteLength,0);const combined=new Uint8Array(tot);let off=0;for(const c of chunks){combined.set(new Uint8Array(c),off);off+=c.byteLength}addDL(meta.n,new Blob([combined]),meta.s);sstat('smsg-r',`✓ File ready: ${meta.n}`,'ok');toast('File ready: '+meta.n,'ok');chunks=[]}catch(e){sstat('smsg-r','Assembly error: '+e.message,'err')}}
-      if(m.t==='done'){pdot('r','done','ALL FILES RECEIVED ✓');document.getElementById('rbar').style.width='100%';document.getElementById('rpct').textContent='100%';sstat('smsg-r','✓ All files received!','ok');toast('Transfer complete!','ok');document.getElementById('recv-btn').textContent='✓ COMPLETE'}
+      if(m.t==='eof'&&meta){try{const tot=chunks.reduce((a,c)=>a+c.byteLength,0);const combined=new Uint8Array(tot);let off=0;for(const c of chunks){combined.set(new Uint8Array(c),off);off+=c.byteLength}addDL(meta.n,new Blob([combined]),meta.s);playSound('filercvd');sstat('smsg-r',`✓ File ready: ${meta.n}`,'ok');toast('File ready: '+meta.n,'ok');chunks=[]}catch(e){sstat('smsg-r','Assembly error: '+e.message,'err')}}
+      if(m.t==='done'){stopTxTick();playSound('complete');pdot('r','done','ALL FILES RECEIVED ✓');document.getElementById('rbar').style.width='100%';document.getElementById('rpct').textContent='100%';sstat('smsg-r','✓ All files received!','ok');toast('Transfer complete!','ok');document.getElementById('recv-btn').textContent='✓ COMPLETE'}
     }else{
       if(!meta)return;
       try{const dec=await decC(data);chunks.push(dec);rb+=dec.byteLength;const pct=Math.min(100,Math.round(rb/meta.s*100));const el=(Date.now()-t0)/1000;document.getElementById('rbar').style.width=pct+'%';document.getElementById('rpct').textContent=pct+'%';document.getElementById('rrcvd').textContent=fmtB(rb);document.getElementById('rspd').textContent=el>0?fmtB(rb/el)+'/s':'—'}
-      catch(e){sstat('smsg-r','Decrypt error — key mismatch?','err')}
+      catch(e){stopTxTick();playSound('error');sstat('smsg-r','Decrypt error — key mismatch?','err')}
     }
   });
 }
@@ -511,11 +745,11 @@ function addDL(name,blob,size){
   const a=document.getElementById('dl-area');a.classList.add('on');
   const url=URL.createObjectURL(blob);
   const w=document.createElement('div');
-  w.innerHTML=`<div class="dl-card"><div class="dl-ico">${fIco(name)}</div><div class="dl-info"><div class="dl-name">${name}</div><div class="dl-sz">${fmtB(size)} · AES-256-GCM Decrypted ✓</div></div></div><a href="${url}" download="${name}" style="text-decoration:none"><button class="btn btn-suc">⬇ DOWNLOAD ${name}</button></a>`;
+  w.innerHTML=`<div class="dl-card"><div class="dl-ico">${fIco(name)}</div><div class="dl-info"><div class="dl-name">${name}</div><div class="dl-sz">${fmtB(size)} · AES-256-GCM Decrypted ✓</div></div></div><a href="${url}" download="${name}" style="text-decoration:none"><button class="btn btn-suc" onclick="playSound('download')">⬇ DOWNLOAD ${name}</button></a>`;
   a.appendChild(w);
 }
 
-function copyURL(){const v=document.getElementById('url-disp').value;const b=document.getElementById('cp-btn');navigator.clipboard.writeText(v).then(()=>{b.textContent='COPIED!';b.classList.add('copied');toast('Link copied!','ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('copied')},2000)}).catch(()=>{document.getElementById('url-disp').select();document.execCommand('copy');toast('Copied!','ok')})}
+function copyURL(){const v=document.getElementById('url-disp').value;const b=document.getElementById('cp-btn');navigator.clipboard.writeText(v).then(()=>{b.textContent='COPIED!';b.classList.add('copied');playSound('copy');toast('Link copied!','ok');setTimeout(()=>{b.textContent='COPY';b.classList.remove('copied')},2000)}).catch(()=>{document.getElementById('url-disp').select();document.execCommand('copy');playSound('copy');toast('Copied!','ok')})}
 
 /* ── ERROR MSGS ── */
 function pEM(e){const t=e.type||'';if(t==='peer-unavailable')return'Sender not found. Their tab may have closed or link expired.';if(t==='network')return'Network error. Check your connection.';if(t==='server-error')return'Signal server error. Wait 30s and retry.';if(t==='socket-error'||t==='socket-closed')return'Socket error — firewall may block WebRTC (TURN should bypass this).';return`Error [${t}]: ${e.message||'Unknown'}`}
