@@ -1,95 +1,356 @@
-# **🚀 Fardomax Secure Transmit**
+# 🔐 Fardomax Secure Transmit
 
-**Fardomax Secure Transmit** is a lightning-fast, ultra-secure, peer-to-peer (P2P) file-sharing web application. It allows two users to connect directly via a secure tunnel and transfer files of any size without relying on a central server to store the data.
+<div align="center">
 
-Featuring a sleek, futuristic cyberpunk interface, Fardomax is built purely with standard HTML, CSS, and Vanilla JavaScript.
+![Fardomax Banner](https://img.shields.io/badge/FARDOMAX-Secure%20Transmit-00c8ff?style=for-the-badge&labelColor=020408&color=00c8ff)
+![Version](https://img.shields.io/badge/version-1.0.0-00ffcc?style=flat-square&labelColor=020408)
+![License](https://img.shields.io/badge/license-MIT-00c8ff?style=flat-square&labelColor=020408)
+![No Server](https://img.shields.io/badge/server%20storage-ZERO-ff2d55?style=flat-square&labelColor=020408)
+![Encryption](https://img.shields.io/badge/encryption-AES--256--GCM-00ffcc?style=flat-square&labelColor=020408)
+![HTML](https://img.shields.io/badge/built%20with-HTML%20%2B%20JS-00c8ff?style=flat-square&labelColor=020408)
 
-## **✨ Features**
+**Military-grade encrypted peer-to-peer file transfer. No servers. No limits. No accounts. Works anywhere in the world.**
 
-* **⚡ Unlimited Speed**: Transfers happen directly between browsers. Your transfer speed is only limited by your internet connection, with no server bottlenecks.  
-* **♾️ No Size Limits**: Data is chunked and streamed directly into memory. Send 10MB or 100GB; the app handles it effortlessly.  
-* **🔒 End-to-End Encryption (E2EE)**: Utilizes WebRTC's built-in Datagram Transport Layer Security (DTLS) and Secure Real-time Transport Protocol (SRTP). Your files are heavily encrypted before they even leave your device.  
-* **🔑 Secure Passkey & Link Sharing**: Connect using a simple 6-character passkey or a direct encrypted URL.  
-* **🎨 Cyberpunk Aesthetic**: Immersive UI with pulsating neon animations, dynamic loading sequences, and a responsive dark-mode design powered by Tailwind CSS.  
-* **🪶 Zero Frameworks**: Pure Vanilla JS, HTML, and CSS. No React, Vue, or build steps required.
+[Live Demo](#) · [How It Works](fardomax-how-it-works.html) · [Security](fardomax-security.html) · [Privacy Policy](fardomax-privacy.html)
 
-## **🛠️ Technology Stack**
+</div>
 
-* **Frontend**: HTML5, Vanilla JavaScript (ES Modules)  
-* **Styling**: Tailwind CSS (via CDN)  
-* **Icons**: Lucide Icons (via CDN)  
-* **P2P Protocol**: WebRTC (Real-Time Communication Data Channels)  
-* **Signaling Server**: Firebase (Firestore & Anonymous Auth)
+---
 
-## **🧠 How It Works**
+## ✨ What Is Fardomax Secure Transmit?
 
-Unlike traditional file-sharing services (like Google Drive or Dropbox) where you upload a file to a server and the receiver downloads it from that server, Fardomax uses **WebRTC**.
+Fardomax Secure Transmit is a **fully client-side, browser-based P2P file transfer app** built in a single HTML file. Files travel **directly between browsers** — encrypted end-to-end with AES-256-GCM — without ever touching a server. No cloud storage. No registration. No file size limits.
 
-1. **Signaling (Firebase)**: When you host a file, Fardomax uses a tiny Firebase database to securely exchange "handshake" information (ICE candidates and Session Descriptions) with the receiver.  
-2. **The Tunnel (WebRTC)**: Once the handshake is complete, a direct, encrypted P2P tunnel is established between the sender's browser and the receiver's browser.  
-3. **The Transfer**: The file is broken into tiny chunks (16KB) and beamed directly through the tunnel. The Firebase server never sees, touches, or stores your file.
+> Drop files → Generate a secure link → Share it → Recipient connects → Transfer happens peer-to-peer. Done.
 
-## **🚀 Installation & Setup**
+---
 
-Because Fardomax is a static web application, deployment is incredibly simple. However, you will need your own free Firebase account to handle the initial signaling handshake.
+## 🚀 Features
 
-### **Step 1: Create a Firebase Project**
+| Feature | Detail |
+|---|---|
+| 🔒 **AES-256-GCM Encryption** | Every byte encrypted before leaving your browser. Authenticated & tamper-proof. |
+| ∞ **No File Size Limit** | Files streamed in 64 KB chunks — transfer gigabytes, no restriction. |
+| 🌍 **Global TURN Relay** | Works across any NAT/firewall anywhere in the world via Open Relay + Metered TURN servers. |
+| 🚫 **Zero Server Storage** | Files never reach our infrastructure. Architecturally impossible. |
+| 🔗 **Unique Shareable URL** | Each session gets a one-time URL with the encryption key embedded in the fragment. |
+| ⚡ **Unlimited Speed** | Direct P2P transfers run at your full network speed. No server throttling. |
+| 👤 **No Account Required** | Open the page. Transfer. Close. No sign-up, no login, no email. |
+| 🔊 **Futuristic Sound Engine** | Web Audio API synthesized sounds for every transfer event. Mutable. |
+| 🎨 **Futuristic UI** | Animated particle canvas, hexagon loader, Orbitron typography, glowing cyan aesthetic. |
+| 📄 **Single HTML File** | The entire app is one `.html` file. Download and run locally with zero dependencies. |
 
-1. Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.  
-2. Enable **Authentication** and turn on the **Anonymous** sign-in provider.  
-3. Enable **Firestore Database** and create a database (Start in Test Mode or configure security rules to allow read/writes to the fardomax\_rooms collection).  
-4. Go to Project Settings \-\> General \-\> Your Apps, and add a "Web App" (\</\>).  
-5. Copy your firebaseConfig object.
+---
 
-### **Step 2: Update the Code**
+## 📁 Project Files
 
-Open index.html and locate the \--- FIREBASE CONFIGURATION \--- section inside the \<script type="module"\> tag.
+```
+fardomax/
+├── fardomax-secure-transmit.html   ← Main app (the file transfer tool)
+├── fardomax-privacy.html           ← Privacy Policy page
+├── fardomax-security.html          ← Security White Paper page
+├── fardomax-how-it-works.html      ← Technical guide & FAQ page
+└── README.md                       ← This file
+```
 
-Replace the sandbox configuration logic with your actual Firebase config:
+---
 
-// Replace this block:  
-const firebaseConfig \= typeof \_\_firebase\_config \!== 'undefined' ? JSON.parse(\_\_firebase\_config) : {};
+## 🖥️ How To Use
 
-// With your actual Firebase config:  
-const firebaseConfig \= {  
-  apiKey: "YOUR\_API\_KEY",  
-  authDomain: "YOUR\_PROJECT\_ID.firebaseapp.com",  
-  projectId: "YOUR\_PROJECT\_ID",  
-  storageBucket: "YOUR\_PROJECT\_ID.appspot.com",  
-  messagingSenderId: "YOUR\_MESSAGING\_SENDER\_ID",  
-  appId: "YOUR\_APP\_ID"  
-};
+### Quick Start
 
-### **Step 3: Run the App**
+1. **Download** `fardomax-secure-transmit.html`
+2. **Open** it in Chrome, Firefox, or Edge
+3. That's it — no install, no server, no build step
 
-Since this app uses ES Modules (\<script type="module"\>), you cannot just double-click the index.html file to open it. You must serve it over a local HTTP server.
+### Sending Files
 
-If you have Python installed:
+1. Drag & drop files onto the drop zone (or click to browse)
+2. Click **◈ GENERATE SECURE LINK**
+3. Copy the generated link
+4. Send it to your recipient via Signal, WhatsApp, iMessage, or any trusted channel
+5. Keep your tab open — the link is valid only while your page is open
 
-python3 \-m http.server 8000
+### Receiving Files
 
-Or using Node.js/npm:
+1. Open `fardomax-secure-transmit.html` in your browser
+2. Paste the share link into the Receive panel
+3. Click **◈ CONNECT & RECEIVE**
+4. Wait for files to arrive, then click **⬇ DOWNLOAD**
 
+---
+
+## 🔐 Security Architecture
+
+### Encryption
+- **Algorithm:** AES-256-GCM (Galois/Counter Mode)
+- **Key length:** 256-bit — 2²⁵⁶ possible keys
+- **Key generation:** `crypto.subtle.generateKey` — OS-level CSPRNG
+- **IV:** 96-bit random per chunk — prevents pattern detection
+- **Authentication:** 128-bit GCM tag — tamper detection built-in
+
+### Key Distribution (Zero-Knowledge)
+The encryption key is embedded in the **URL fragment** (`#`) which browsers **never send to servers** (RFC 3986). Not even the signal server sees your key.
+
+```
+Share URL format:
+https://your-domain/fardomax-secure-transmit.html#[peerID]|[64-char-hex-key]
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+                                                   Never sent to any server
+```
+
+### Transport Security
+| Layer | Protocol |
+|---|---|
+| Application | AES-256-GCM (your key) |
+| WebRTC Data Channel | DTLS 1.2+ (mandatory by spec) |
+| Signal Server | TLS 1.3 |
+| TURN Relay | TLS/TCP 443 |
+
+When TURN relay is used, data is **double-encrypted** (AES-256-GCM + DTLS). The relay sees only opaque ciphertext.
+
+### Threat Model Summary
+
+| Threat | Status |
+|---|---|
+| Network eavesdropper | ✅ **BLOCKED** — Double-encrypted ciphertext only |
+| TURN relay operator | ✅ **BLOCKED** — Cannot decrypt without key in URL fragment |
+| Man-in-the-middle | ✅ **BLOCKED** — AES-GCM auth tag detects any modification |
+| Fardomax servers | ✅ **BLOCKED** — No file data ever reaches our infrastructure |
+| Brute force key attack | ✅ **BLOCKED** — 2²⁵⁶ keys, computationally infeasible |
+| Signal server logging | ⚠️ **MITIGATED** — Can see peer IDs, never file data or keys |
+| URL interception | ⚠️ **User Responsibility** — Share via encrypted channels |
+
+---
+
+## 🌐 Network Architecture
+
+### Connection Flow
+
+```
+SENDER BROWSER                     RECEIVER BROWSER
+      │                                    │
+      │──── Register Peer ID ──────────────│
+      │         ↓ Signal Server            │
+      │──── SDP Offer ─────────────────────│
+      │──── ICE Candidates ────────────────│
+      │                                    │
+      │         Direct P2P (preferred)     │
+      │════════════════════════════════════│
+      │    AES-256-GCM + DTLS encrypted    │
+      │                                    │
+      │   OR via TURN relay (fallback)     │
+      │──→ [TURN Server] ──────────────────│
+      │    Double encrypted                │
+```
+
+### ICE Server Configuration
+```javascript
+// STUN servers (peer discovery)
+stun:stun.l.google.com:19302
+stun:stun1.l.google.com:19302
+
+// TURN servers (relay fallback — free, globally distributed)
+turn:openrelay.metered.ca:80        // Open Relay Project
+turn:openrelay.metered.ca:443
+turn:a.relay.metered.ca:80          // Metered.ca backup
+turn:a.relay.metered.ca:443
+```
+
+---
+
+## 🔊 Sound System
+
+All sounds are **synthesized in real-time** using the **Web Audio API** — no external audio files required.
+
+| Event | Sound |
+|---|---|
+| File dropped | Soft thud + rising sweep |
+| Link generated | 3-note rising arpeggio |
+| Peer connected | Digital handshake sweep |
+| Transmitting (live) | Rapid high-freq data ticks + animated EQ bars |
+| Receiving (live) | Softer data ticks |
+| File sent | Bright double ping |
+| File received | Mellow 3-note bell chime |
+| All complete | 6-note success fanfare |
+| Download clicked | Click + descending sweep |
+| Link copied | Quick double beep |
+| Error | Low descending buzz |
+
+Toggle sound on/off using the **🔊 SOUND ON** button in the header.
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Usage |
+|---|---|
+| **WebRTC** (native browser) | Peer-to-peer data channels |
+| **PeerJS 1.5.4** | WebRTC signaling abstraction |
+| **Web Crypto API** | AES-256-GCM encryption/decryption |
+| **Web Audio API** | Synthesized sound effects |
+| **Canvas API** | Animated particle network background |
+| **CSS Animations** | Futuristic loading screen & UI effects |
+| **Google Fonts** | Orbitron, Share Tech Mono, Exo 2 |
+
+**Zero frameworks. Zero build tools. Zero backend.**
+
+---
+
+## 📊 Browser Support
+
+| Browser | Support |
+|---|---|
+| Chrome 90+ | ✅ Full support |
+| Edge 90+ | ✅ Full support |
+| Firefox 85+ | ✅ Full support |
+| Opera 76+ | ✅ Full support |
+| Safari 14.1+ | ⚠️ Works, may be slower |
+| Chrome for Android | ✅ Full support |
+| Firefox for Android | ✅ Full support |
+| Safari for iOS | ⚠️ Limited WebRTC |
+| Internet Explorer | ❌ Not supported |
+
+**Requirements:** WebRTC Data Channels, Web Crypto API (`crypto.subtle`), ES6+
+
+---
+
+## ⚙️ Self-Hosting
+
+Since Fardomax is a single HTML file, hosting is trivial:
+
+### GitHub Pages
+```bash
+git clone https://github.com/yourusername/fardomax.git
+cd fardomax
+# Push to main branch — GitHub Pages serves it automatically
+```
+
+### Any Static Host (Netlify, Vercel, etc.)
+Just upload the `.html` files. No server configuration needed.
+
+### Locally (no internet for signaling)
+```bash
+# Run a local server (Python)
+python -m http.server 8080
+
+# Or with Node.js
 npx serve .
 
-Then navigate to http://localhost:8000 in your browser.
+# Open in browser
+http://localhost:8080/fardomax-secure-transmit.html
+```
 
-## **🌐 Deployment**
+> **Note:** You still need internet access for the initial WebRTC signaling handshake (PeerJS connects to `0.peerjs.com`). Once the P2P connection is established, all file data flows locally.
 
-You can host this single index.html file for free on any static hosting provider:
+### Custom PeerJS Server (fully private)
+To eliminate dependency on the public PeerJS signal server, run your own:
 
-* [GitHub Pages](https://pages.github.com/)  
-* [Vercel](https://vercel.com/)  
-* [Netlify](https://netlify.com/)  
-* [Cloudflare Pages](https://pages.cloudflare.com/)
+```bash
+npm install -g peer
+peerjs --port 9000 --key peerjs --path /myapp
+```
 
-Simply push the repository to GitHub and connect it to your hosting provider of choice.
+Then update the config in the HTML:
+```javascript
+const PCFG = {
+  host: 'your-server.com',
+  port: 9000,
+  path: '/myapp',
+  secure: true,
+  // ...
+};
+```
 
-## **⚠️ Important Notes**
+---
 
-* **Keep the Tab Open**: Because this is a direct P2P connection, the sender *must* keep their browser tab open until the receiver finishes downloading the file. If the sender closes the tab, the transfer terminates instantly.  
-* **Strict Firewalls**: Corporate networks or strict NATs may occasionally block WebRTC connections. The app uses public Google STUN servers to bypass most routers, but restrictive environments may cause the connection to fail.
+## 🐛 Troubleshooting
 
-## **📄 License**
+### "Connecting..." but never connects
 
-This project is open-source and available under the MIT License.
+| Cause | Fix |
+|---|---|
+| Sender tab closed | Sender must keep their page open during the entire transfer |
+| Wrong link | Copy the **complete** URL including everything after `#` |
+| Firewall blocking WebRTC | TURN relay should bypass this — try on mobile hotspot to test |
+| Browser issue | Use Chrome or Firefox for best WebRTC support |
+| Both on same device | Open sender in Tab 1, receiver in Tab 2 — do NOT use same tab |
+
+### Transfer is slow
+- Direct P2P is fastest — try on the same network first
+- TURN relay adds latency but works globally
+- Large files (1 GB+) may take time depending on network speed
+
+### Decryption error
+- Ensure you copied the **full** share URL — the key is the long string after `|`
+- Generate a new link and try again
+
+---
+
+## 🔒 Privacy
+
+- **Zero files stored** — no file ever touches our servers
+- **Zero analytics** — no tracking pixels, no SDKs
+- **Zero cookies** — no session tracking
+- **Zero accounts** — no registration
+- **Zero ads** — no advertising networks
+
+Read the full [Privacy Policy](fardomax-privacy.html).
+
+---
+
+## 📄 License
+
+```
+MIT License
+
+Copyright (c) 2025 Fardomax / iamfardinsk
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+```
+
+---
+
+## 🙌 Contributing
+
+Contributions welcome! Here are some areas to improve:
+
+- [ ] Resume-on-reconnect for dropped transfers
+- [ ] Multi-recipient broadcast (one sender → many)
+- [ ] QR code for share link
+- [ ] Optional password protection layer on top of AES key
+- [ ] Transfer history (local storage only)
+- [ ] File preview before download
+- [ ] Custom self-hosted TURN server configuration UI
+
+**To contribute:**
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -m 'Add my feature'`
+4. Push and open a Pull Request
+
+---
+
+## 👤 Author
+
+**Fardin SK** — [@iamfardinsk](https://github.com/omaairsk)
+
+Built with 🔐 for privacy, ⚡ for speed, and 🎨 for aesthetics.
+
+---
+
+<div align="center">
+
+**Fardomax Secure Transmit** · Zero Servers · Zero Limits · Zero Compromise
+
+</div>
